@@ -528,10 +528,34 @@ export type StorageAsset = {
 
 export type OnThisDayData = { year: number };
 export type BirthdayData = { personId: string; personName: string; year: number };
+export type ThisWeekLastYearData = { year: number; weekOffset?: number; title?: string; subtitle?: string };
+export type RecentHighlightsData = { period?: string; title?: string; subtitle?: string };
+export type SeasonSummaryData = { season: string; year: number; title?: string; subtitle?: string };
+export type MilestoneAnniversaryData = { yearsAgo: number; year: number; title?: string; subtitle?: string };
+export type PeoplePetGrowthData = { personId?: string; personName?: string; yearsSpan?: number; title?: string; subtitle?: string };
+export type TripEventData = { locationName?: string; city?: string; country?: string; title?: string; subtitle?: string };
+export type VisualPatternData = { patternType?: string; title?: string; subtitle?: string };
+export type HolidayCelebrationData = { holidayName: string; year?: number; title?: string; subtitle?: string };
+export type RemixCollageData = { style?: string; title?: string; subtitle?: string };
+export type StylizedPhotoData = { effect?: string; title?: string; subtitle?: string };
+export type CinematicMomentsData = { effectType?: string; title?: string; subtitle?: string };
+export type CollaborativeData = { albumId?: string; albumName?: string; title?: string; subtitle?: string };
 
 export interface MemoryData {
   [MemoryType.OnThisDay]: OnThisDayData;
   [MemoryType.Birthday]: BirthdayData;
+  [MemoryType.ThisWeekLastYear]: ThisWeekLastYearData;
+  [MemoryType.RecentHighlights]: RecentHighlightsData;
+  [MemoryType.SeasonSummary]: SeasonSummaryData;
+  [MemoryType.MilestoneAnniversary]: MilestoneAnniversaryData;
+  [MemoryType.PeoplePetGrowth]: PeoplePetGrowthData;
+  [MemoryType.TripEvent]: TripEventData;
+  [MemoryType.VisualPattern]: VisualPatternData;
+  [MemoryType.HolidayCelebration]: HolidayCelebrationData;
+  [MemoryType.RemixCollage]: RemixCollageData;
+  [MemoryType.StylizedPhoto]: StylizedPhotoData;
+  [MemoryType.CinematicMoments]: CinematicMomentsData;
+  [MemoryType.Collaborative]: CollaborativeData;
 }
 
 export type VersionCheckMetadata = { checkedAt: string; releaseVersion: string };

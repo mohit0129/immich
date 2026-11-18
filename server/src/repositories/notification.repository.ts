@@ -18,17 +18,9 @@ export class NotificationRepository {
           // remove soft-deleted notifications
           eb.and([eb('deletedAt', 'is not', null), eb('deletedAt', '<', DateTime.now().minus({ days: 3 }).toJSDate())]),
 
-          // remove old, read notifications
           eb.and([
-            // keep recently read messages around for a few days
-            eb('readAt', '>', DateTime.now().minus({ days: 2 }).toJSDate()),
-            eb('createdAt', '<', DateTime.now().minus({ days: 15 }).toJSDate()),
-          ]),
-
-          eb.and([
-            // remove super old, unread notifications
-            eb('readAt', '=', null),
-            eb('createdAt', '<', DateTime.now().minus({ days: 30 }).toJSDate()),
+            eb('readAt', 'is not', null),
+            eb('readAt', '<', DateTime.now().minus({ days: 7 }).toJSDate()),
           ]),
         ]),
       )
@@ -36,22 +28,37 @@ export class NotificationRepository {
   }
 
   @GenerateSql({ params: [DummyValue.UUID, {}] }, { name: 'unread', params: [DummyValue.UUID, { unread: true }] })
-  search(userId: string, dto: NotificationSearchDto) {
-    return this.db
+  search(userId: string | undefined, dto: NotificationSearchDto) {
+    let qb = this.db
       .selectFrom('notification')
       .select(columns.notification)
-      .where((qb) =>
-        qb.and({
-          userId,
-          id: dto.id,
-          level: dto.level,
-          type: dto.type,
-          readAt: dto.unread ? null : undefined,
-        }),
-      )
-      .where('deletedAt', 'is', null)
-      .orderBy('createdAt', 'desc')
-      .execute();
+      .where('deletedAt', 'is', null);
+
+    if (userId) {
+      qb = qb.where('userId', '=', userId);
+    }
+    if (dto.id) {
+      qb = qb.where('id', '=', dto.id);
+    }
+    if (dto.level) {
+      qb = qb.where('level', '=', dto.level);
+    }
+    if (dto.type) {
+      qb = qb.where('type', '=', dto.type);
+    }
+
+    if (dto.unread) {
+      qb = qb.where('readAt', 'is', null);
+    } else {
+      qb = qb.where((eb) =>
+        eb.or([
+          eb('readAt', 'is', null),
+          eb('readAt', '>=', DateTime.now().minus({ days: 7 }).toJSDate()),
+        ]),
+      );
+    }
+
+    return qb.orderBy('createdAt', 'desc').execute();
   }
 
   create(notification: Insertable<NotificationTable>) {

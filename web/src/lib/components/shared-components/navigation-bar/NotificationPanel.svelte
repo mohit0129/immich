@@ -20,11 +20,40 @@
 
   const query = createQuery(getNotificationsQuery);
   const notifications = $derived(query.data ?? []);
-  const noUnreadNotifications = $derived(notifications.length === 0);
+
+  const isSocialUpdate = (n: NotificationDto): boolean => {
+    if (n.type === NotificationType.AlbumInvite) return true;
+    if (
+      n.title?.toLowerCase().includes('reaction') ||
+      n.title?.toLowerCase().includes('comment') ||
+      n.title?.toLowerCase().includes('shared album')
+    )
+      return true;
+    if (
+      n.description?.toLowerCase().includes('reacted') ||
+      n.description?.toLowerCase().includes('commented') ||
+      n.description?.toLowerCase().includes('shared an album')
+    )
+      return true;
+    if (
+      n.data &&
+      typeof n.data === 'string' &&
+      (n.data.includes('isReaction') || n.data.includes('isComment') || n.data.includes('albumId'))
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  let activeSection: 'notifications' | 'updates' = $state('notifications');
+  const systemNotifications = $derived(notifications.filter((n) => !isSocialUpdate(n)));
+  const socialUpdates = $derived(notifications.filter((n) => isSocialUpdate(n)));
+  const displayedNotifications = $derived(activeSection === 'notifications' ? systemNotifications : socialUpdates);
+  const noUnreadNotifications = $derived(displayedNotifications.length === 0);
 
   const markAllAsRead = () =>
     executeMutation(updateNotificationsMutation, [
-      { notificationUpdateAllDto: { ids: notifications.map(({ id }) => id), readAt: new Date().toISOString() } },
+      { notificationUpdateAllDto: { ids: displayedNotifications.map(({ id }) => id), readAt: new Date().toISOString() } },
     ]);
 
   const handleNotificationAction = async (notification: NotificationDto) => {
@@ -88,6 +117,23 @@
       </div>
     </div>
 
+    <div class="mx-4 flex gap-1.5 rounded-xl bg-gray-200/80 p-1 dark:bg-gray-800">
+      <button
+        type="button"
+        class="flex-1 py-1 text-center text-xs font-semibold rounded-lg transition-colors {activeSection === 'notifications' ? 'bg-white text-primary shadow-xs dark:bg-gray-700 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400'}"
+        onclick={() => (activeSection = 'notifications')}
+      >
+        Notifications ({systemNotifications.length})
+      </button>
+      <button
+        type="button"
+        class="flex-1 py-1 text-center text-xs font-semibold rounded-lg transition-colors {activeSection === 'updates' ? 'bg-white text-primary shadow-xs dark:bg-gray-700 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400'}"
+        onclick={() => (activeSection = 'updates')}
+      >
+        Updates ({socialUpdates.length})
+      </button>
+    </div>
+
     <hr class="dark:border-black" />
 
     {#if noUnreadNotifications}
@@ -96,12 +142,12 @@
         gap={1}
       >
         <Icon icon={mdiBellOutline} size="20"></Icon>
-        <Text>{$t('no_notifications')}</Text>
+        <Text>{activeSection === 'notifications' ? $t('no_notifications') : 'No social updates'}</Text>
       </Stack>
     {:else}
       <Scrollable class="pb-6">
         <Stack gap={0}>
-          {#each notifications as notification (notification.id)}
+          {#each displayedNotifications as notification (notification.id)}
             <div animate:flip={{ duration: 400 }}>
               <NotificationItem {notification} {onclick} />
             </div>

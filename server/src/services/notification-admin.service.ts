@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { AuthDto } from 'src/dtos/auth.dto.js';
 import { SystemConfigSmtpDto } from 'src/dtos/config.dto.js';
-import { NotificationCreateDto, mapNotification } from 'src/dtos/notification.dto.js';
-import { NotificationLevel, NotificationType } from 'src/enum.js';
+import { NotificationCreateDto, NotificationSearchDto, mapNotification } from 'src/dtos/notification.dto.js';
+import { NotificationLevel, NotificationType, UserStatus } from 'src/enum.js';
 import { EmailTemplate } from 'src/repositories/email.repository.js';
 import { BaseService } from 'src/services/base.service.js';
 import { getExternalDomain } from 'src/utils/misc.js';
@@ -10,16 +10,45 @@ import { getExternalDomain } from 'src/utils/misc.js';
 @Injectable()
 export class NotificationAdminService extends BaseService {
   async create(auth: AuthDto, dto: NotificationCreateDto) {
-    const item = await this.notificationRepository.create({
-      userId: dto.userId,
-      type: dto.type ?? NotificationType.Custom,
-      level: dto.level ?? NotificationLevel.Info,
-      title: dto.title,
-      description: dto.description,
-      data: dto.data,
-    });
+    let targetUserIds: string[] = [];
 
-    return mapNotification(item);
+    if (dto.allUsers) {
+      const users = await this.userRepository.getList({ withDeleted: false });
+      targetUserIds = users.filter((u) => u.status === UserStatus.Active).map((u) => u.id);
+    } else if (dto.userIds && dto.userIds.length > 0) {
+      targetUserIds = dto.userIds;
+    } else if (dto.userId) {
+      targetUserIds = [dto.userId];
+    }
+
+    if (targetUserIds.length === 0) {
+      throw new BadRequestException('No recipients specified for notification');
+    }
+
+    let lastCreated: any = null;
+    for (const userId of targetUserIds) {
+      const item = await this.notificationRepository.create({
+        userId,
+        type: dto.type ?? NotificationType.Custom,
+        level: dto.level ?? NotificationLevel.Info,
+        title: dto.title,
+        description: dto.description,
+        data: dto.data,
+      });
+      lastCreated = item;
+      this.websocketRepository.clientSend('on_notification', userId, mapNotification(item));
+    }
+
+    return mapNotification(lastCreated);
+  }
+
+  async search(dto: NotificationSearchDto = {}) {
+    const items = await this.notificationRepository.search(undefined, dto);
+    return items.map((item) => mapNotification(item));
+  }
+
+  async delete(id: string) {
+    await this.notificationRepository.delete(id);
   }
 
   async sendTestEmail(id: string, dto: SystemConfigSmtpDto, tempTemplate?: string) {

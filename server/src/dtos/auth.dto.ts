@@ -12,7 +12,7 @@ export type CookieResponse = {
   values: Array<{ key: ImmichCookie; value: string | null }>;
 };
 
-export const pinCodeRegex = /^\d{6}$/;
+export const pinCodeRegex = /^(?:\d{4}|\d{6})$/;
 
 export type AuthDto = {
   user: AuthUser;

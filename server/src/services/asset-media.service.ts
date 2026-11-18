@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import sanitize from 'sanitize-filename';
 import { StorageCore } from 'src/cores/storage.core.js';
@@ -93,22 +94,36 @@ export class AssetMediaService extends BaseService {
   getUploadFilename({ auth, fieldName, file, body }: UploadRequest): string {
     requireUploadAccess(auth);
 
-    const extension = getFilenameExtension(body.filename || file.originalName);
-    const lookup = {
-      [UploadFieldName.ASSET_DATA]: extension,
-      [UploadFieldName.SIDECAR_DATA]: '.xmp',
-      [UploadFieldName.PROFILE_DATA]: extension,
-    };
+    const rawName = body.filename || file.originalName || `${file.uuid}`;
+    const extension = getFilenameExtension(rawName);
+    const baseName = getFileNameWithoutExtension(rawName);
 
-    return sanitize(`${file.uuid}${lookup[fieldName]}`);
+    switch (fieldName) {
+      case UploadFieldName.SIDECAR_DATA: {
+        return sanitize(`${baseName || file.uuid}.xmp`);
+      }
+
+      case UploadFieldName.PROFILE_DATA: {
+        return sanitize(`${baseName || file.uuid}${extension}`);
+      }
+
+      case UploadFieldName.ASSET_DATA:
+      default: {
+        const cleanName = sanitize(rawName);
+        return cleanName || sanitize(`${file.uuid}${extension}`);
+      }
+    }
   }
 
-  getUploadFolder({ auth, fieldName, file }: UploadRequest): string {
+  getUploadFolder({ auth, fieldName }: UploadRequest): string {
     auth = requireUploadAccess(auth);
 
-    let folder = StorageCore.getNestedFolder(StorageFolder.Upload, auth.user.id, file.uuid);
+    const rawUserName = auth.user.name?.trim() || auth.user.email?.split('@')[0] || auth.user.id;
+    const sanitizedUser = sanitize(rawUserName) || auth.user.id;
+
+    let folder = join(StorageCore.getBaseFolder(StorageFolder.Upload), sanitizedUser);
     if (fieldName === UploadFieldName.PROFILE_DATA) {
-      folder = StorageCore.getFolderLocation(StorageFolder.Profile, auth.user.id);
+      folder = join(StorageCore.getBaseFolder(StorageFolder.Profile), sanitizedUser);
     }
 
     this.storageRepository.mkdirSync(folder);
@@ -117,9 +132,12 @@ export class AssetMediaService extends BaseService {
   }
 
   async onUploadError(request: AuthRequest, file: Express.Multer.File) {
-    const uploadFilename = this.getUploadFilename(asUploadRequest(request, file));
-    const uploadFolder = this.getUploadFolder(asUploadRequest(request, file));
-    const uploadPath = `${uploadFolder}/${uploadFilename}`;
+    const uploadPath =
+      file.path ||
+      join(
+        this.getUploadFolder(asUploadRequest(request, file)),
+        this.getUploadFilename(asUploadRequest(request, file)),
+      );
 
     await this.jobRepository.queue({ name: JobName.FileDelete, data: { files: [uploadPath] } });
   }

@@ -6,6 +6,7 @@ packages:
   - server
   - plugins
   - web
+  - mobile-rn
   - .github
   - packages/*
 allowBuilds:

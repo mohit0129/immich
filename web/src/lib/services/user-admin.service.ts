@@ -1,4 +1,5 @@
 import { authManager } from '#lib/managers/auth-manager.svelte.ts';
+import AdjustQuotaModal from '#lib/modals/AdjustQuotaModal.svelte';
 import PasswordResetSuccessModal from '#lib/modals/PasswordResetSuccessModal.svelte';
 import UserDeleteConfirmModal from '#lib/modals/UserDeleteConfirmModal.svelte';
 import UserRestoreConfirmModal from '#lib/modals/UserRestoreConfirmModal.svelte';
@@ -11,6 +12,9 @@ import { getFormatter } from '#lib/utils/i18n.ts';
 import { UserStatus, type UserAdminResponseDto } from '@immich/sdk';
 import { modalManager, type ActionItem } from '@immich/ui';
 import {
+  mdiAccountCancelOutline,
+  mdiAccountCheckOutline,
+  mdiChartPieOutline,
   mdiDeleteRestore,
   mdiInformationOutline,
   mdiLockReset,
@@ -46,6 +50,13 @@ export const getUserAdminActions = ($t: MessageFormatter, user: UserAdminRespons
     title: $t('edit'),
     $if: () => !user.deletedAt,
     onAction: () => goto(Route.editUser(user)),
+  };
+
+  const AdjustQuota: ActionItem = {
+    icon: mdiChartPieOutline,
+    title: $t('adjust_quota'),
+    $if: () => !user.deletedAt,
+    onAction: () => modalManager.show(AdjustQuotaModal, { user }),
   };
 
   const Delete: ActionItem = {
@@ -88,7 +99,28 @@ export const getUserAdminActions = ($t: MessageFormatter, user: UserAdminRespons
     onAction: () => handleResetPinCodeUserAdmin(user),
   };
 
-  return { Detail, Update, Delete, Restore, ResetPassword, ResetPinCode };
+  const Suspend: ActionItem = {
+    icon: mdiAccountCancelOutline,
+    title: $t('suspend'),
+    color: 'danger',
+    $if: () => authManager.user.id !== user.id && !user.deletedAt && (user.status as any) !== 'suspended',
+    onAction: () => handleSuspendUserAdmin(user, true),
+  };
+
+  const Unsuspend: ActionItem = {
+    icon: mdiAccountCheckOutline,
+    title: $t('unsuspend'),
+    color: 'primary',
+    $if: () => authManager.user.id !== user.id && !user.deletedAt && (user.status as any) === 'suspended',
+    onAction: () => handleSuspendUserAdmin(user, false),
+  };
+
+  return { Detail, Update, AdjustQuota, Delete, Restore, ResetPassword, ResetPinCode, Suspend, Unsuspend };
+};
+
+export const handleSuspendUserAdmin = async (user: UserAdminResponseDto, suspend: boolean) => {
+  const status = suspend ? ('suspended' as any) : UserStatus.Active;
+  await executeMutation(updateUserAdminMutation, [{ id: user.id, userAdminUpdateDto: { status } as any }]);
 };
 
 // TODO move password reset server-side

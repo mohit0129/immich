@@ -12,7 +12,8 @@ import {
   mapActivity,
 } from 'src/dtos/activity.dto.js';
 import { AuthDto } from 'src/dtos/auth.dto.js';
-import { Permission } from 'src/enum.js';
+import { mapNotification } from 'src/dtos/notification.dto.js';
+import { NotificationLevel, NotificationType, Permission } from 'src/enum.js';
 import { BaseService } from 'src/services/base.service.js';
 
 @Injectable()
@@ -63,6 +64,47 @@ export class ActivityService extends BaseService {
         isLiked: dto.type === ReactionType.LIKE,
         comment: dto.comment,
       });
+
+      try {
+        const album = await this.albumRepository.getById(dto.albumId);
+        if (album) {
+          const albumUsers = album.albumUsers ?? [];
+          const isEmoji = !!dto.comment && ['❤️', '👍', '👎', '🎉', '🔥', '😂'].includes(dto.comment.trim());
+          const isLike = dto.type === ReactionType.LIKE;
+          const isReaction = isLike || isEmoji;
+          const actionText = isReaction
+            ? `reacted ${isLike ? '👍' : dto.comment} to`
+            : `commented "${dto.comment?.slice(0, 50)}" on`;
+          const targetText = dto.assetId ? `a photo in ${album.albumName}` : `album ${album.albumName}`;
+          const title = isReaction ? 'New Reaction' : 'New Comment';
+          const description = `${auth.user.name} ${actionText} ${targetText}`;
+
+          for (const member of albumUsers) {
+            const memberUserId = member.user?.id;
+            if (memberUserId && memberUserId !== auth.user.id) {
+              const notif = await this.notificationRepository.create({
+                userId: memberUserId,
+                type: NotificationType.AlbumUpdate,
+                level: NotificationLevel.Info,
+                title,
+                description,
+                data: JSON.stringify({
+                  albumId: album.id,
+                  assetId: dto.assetId ?? null,
+                  actorName: auth.user.name,
+                  isReaction,
+                  isComment: !isReaction,
+                  emoji: isEmoji ? dto.comment : isLike ? '👍' : null,
+                  comment: dto.comment ?? null,
+                }),
+              });
+              this.websocketRepository.clientSend('on_notification', memberUserId, mapNotification(notif));
+            }
+          }
+        }
+      } catch (err) {
+        this.logger.error(`Failed to send activity notification: ${err}`);
+      }
     }
 
     return { duplicate: isDuplicate, value: mapActivity(activity) };

@@ -14,13 +14,20 @@
 
   let { id, description, isEditor }: Props = $props();
 
-  let value = $derived(description);
+  const parentTag = $derived(description?.match(/\[PARENT:[^\]]+\]/)?.[0] || '');
+  let value = $state(description?.replace(/\[PARENT:[^\]]+\]/g, '').trim() || '');
 
-  const handleFocusOut = () =>
-    executeMutation(
+  $effect(() => {
+    value = description?.replace(/\[PARENT:[^\]]+\]/g, '').trim() || '';
+  });
+
+  const handleFocusOut = () => {
+    const finalDesc = parentTag ? (value ? `${parentTag} ${value}` : parentTag) : value || null;
+    return executeMutation(
       () => updateAlbumInfoMutation({ error: { toast: 'errors.unable_to_save_album' } }),
-      [{ id, updateAlbumDto: { description: value || null } }],
+      [{ id, updateAlbumDto: { description: finalDesc } }],
     );
+  };
 </script>
 
 {#if isEditor}
@@ -38,6 +45,6 @@
   />
 {:else if description}
   <p class="wrap-break-words w-full text-base whitespace-pre-line text-black dark:text-white">
-    {description}
+    {description.replace(/\[PARENT:[^\]]+\]/g, '').trim()}
   </p>
 {/if}

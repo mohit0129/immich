@@ -28,6 +28,7 @@
 
     /** Width of the scrubber component in pixels (bindable for parent component margin adjustments) */
     scrubberWidth?: number;
+    timeGranularity?: 'day' | 'month' | 'year';
     /** Callback fired when user interacts with the scrubber to navigate */
     onScrub?: ScrubberListener;
     /** Callback fired when keyboard events occur on the scrubber */
@@ -46,6 +47,7 @@
     timelineScrollPercent = 0,
     viewportTopMonthScrollPercent = 0,
     viewportTopMonth = undefined,
+    timeGranularity = 'day',
     onScrub = undefined,
     onScrubKeyDown = undefined,
     startScrub = undefined,
@@ -157,11 +159,18 @@
     for (const scrubMonth of reversed) {
       const scrollBarPercentage = scrubMonth.height / timelineFullHeight;
 
+      let dateFormatted = scrubMonth.title;
+      if (timeGranularity === 'year') {
+        dateFormatted = String(scrubMonth.year);
+      } else if (timeGranularity === 'month') {
+        dateFormatted = scrubMonth.title;
+      }
+
       const segment = {
         top,
         count: scrubMonth.assetCount,
         height: toScrollY(scrollBarPercentage),
-        dateFormatted: scrubMonth.title,
+        dateFormatted,
         year: scrubMonth.year,
         month: scrubMonth.month,
         hasLabel: false,
@@ -169,14 +178,34 @@
       };
       top += segment.height;
       if (previousLabeledSegment) {
-        if (previousLabeledSegment.year !== segment.year && verticalSpanWithoutLabel > MIN_YEAR_LABEL_DISTANCE) {
-          verticalSpanWithoutLabel = 0;
-          segment.hasLabel = true;
-          previousLabeledSegment = segment;
-        }
-        if (segment.height > 5 && verticalSpanWithoutDot > MIN_DOT_DISTANCE) {
-          segment.hasDot = true;
-          verticalSpanWithoutDot = 0;
+        if (timeGranularity === 'year') {
+          if (previousLabeledSegment.year !== segment.year) {
+            segment.hasLabel = true;
+            previousLabeledSegment = segment;
+          }
+        } else if (timeGranularity === 'month') {
+          if (
+            (previousLabeledSegment.year !== segment.year || previousLabeledSegment.month !== segment.month) &&
+            verticalSpanWithoutLabel > 16
+          ) {
+            verticalSpanWithoutLabel = 0;
+            segment.hasLabel = true;
+            previousLabeledSegment = segment;
+          }
+          if (segment.height > 4 && verticalSpanWithoutDot > 8) {
+            segment.hasDot = true;
+            verticalSpanWithoutDot = 0;
+          }
+        } else {
+          if (previousLabeledSegment.year !== segment.year && verticalSpanWithoutLabel > MIN_YEAR_LABEL_DISTANCE) {
+            verticalSpanWithoutLabel = 0;
+            segment.hasLabel = true;
+            previousLabeledSegment = segment;
+          }
+          if (segment.height > 5 && verticalSpanWithoutDot > MIN_DOT_DISTANCE) {
+            segment.hasDot = true;
+            verticalSpanWithoutDot = 0;
+          }
         }
       } else {
         segment.hasDot = true;

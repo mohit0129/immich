@@ -21,6 +21,7 @@
   let isBadPinCode = $state(false);
   let hasPinCode = $derived(data.hasPinCode);
   let pinCode = $state('');
+  let pinLength = $state<4 | 6>(6);
 
   const handleUnlockSession = async (code: string) => {
     try {
@@ -54,7 +55,26 @@
 
         <p class="text-center text-sm" style="text-wrap: pretty;">{$t('enter_your_pin_code_subtitle')}</p>
 
-        <PinInput password autofocus bind:value={pinCode} onComplete={handleUnlockSession} />
+        <div class="flex items-center gap-2">
+          <div class="flex rounded-full bg-gray-100 p-1 dark:bg-gray-800">
+            <button
+              type="button"
+              class="rounded-full px-3 py-0.5 text-xs font-medium transition-colors {pinLength === 4 ? 'bg-primary text-white shadow' : 'text-gray-600 dark:text-gray-300 hover:text-primary'}"
+              onclick={() => { pinLength = 4; pinCode = ''; }}
+            >
+              4 digits
+            </button>
+            <button
+              type="button"
+              class="rounded-full px-3 py-0.5 text-xs font-medium transition-colors {pinLength === 6 ? 'bg-primary text-white shadow' : 'text-gray-600 dark:text-gray-300 hover:text-primary'}"
+              onclick={() => { pinLength = 6; pinCode = ''; }}
+            >
+              6 digits
+            </button>
+          </div>
+        </div>
+
+        <PinInput length={pinLength} password autofocus bind:value={pinCode} onComplete={handleUnlockSession} />
       {:else}
         <div class="text-primary">
           <Icon icon={mdiLockSmart} size="64" />

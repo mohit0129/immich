@@ -199,3 +199,42 @@
     @apply bg-subtle rounded-lg;
   }
 }
+
+@keyframes radar-pulse-anim {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.55;
+  }
+  60% {
+    opacity: 0.25;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+.radar-pulse-ring,
+.radar-pulse-circle {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px;
+  background-color: #4250af;
+  animation: radar-pulse-anim 3s cubic-bezier(0.15, 0.85, 0.35, 1) infinite;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.radar-pulse-1 {
+  animation-delay: 0s;
+}
+
+.radar-pulse-2 {
+  animation-delay: 1s;
+}
+
+.radar-pulse-3 {
+  animation-delay: 2s;
+}
+

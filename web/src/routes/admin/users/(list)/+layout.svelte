@@ -1,5 +1,6 @@
 <script lang="ts">
   import AdminPageLayout from '#lib/components/layouts/AdminPageLayout.svelte';
+  import SendNotificationModal from '#lib/modals/SendNotificationModal.svelte';
   import { createPreloadedQuery } from '#lib/queries/client.ts';
   import { searchUsersAdminQuery } from '#lib/queries/user-admin.query.ts';
   import { Route } from '#lib/route.ts';
@@ -20,8 +21,10 @@
     TableHeader,
     TableHeading,
     TableRow,
+    modalManager,
+    type ActionItem,
   } from '@immich/ui';
-  import { mdiInfinity } from '@mdi/js';
+  import { mdiBellOutline, mdiInfinity } from '@mdi/js';
   import type { Snippet } from 'svelte';
   import { t } from 'svelte-i18n';
   import type { LayoutData } from './$types';
@@ -38,9 +41,28 @@
 
   const { Create } = $derived(getUserAdminsActions($t));
 
+  const SendNotification = $derived<ActionItem>({
+    title: $t('send_notification'),
+    icon: mdiBellOutline,
+    onAction: () => modalManager.show(SendNotificationModal, { users: users ?? [] }),
+  });
+
   const getActionsForUser = (user: UserAdminResponseDto) => {
-    const { Detail, Update, Delete, Restore, ResetPassword, ResetPinCode } = getUserAdminActions($t, user);
-    return [Detail, Update, ResetPassword, ResetPinCode, MenuItemType.Divider, Restore, Delete];
+    const { Detail, Update, AdjustQuota, Delete, Restore, ResetPassword, ResetPinCode, Suspend, Unsuspend } =
+      getUserAdminActions($t, user);
+    return [
+      Detail,
+      Update,
+      AdjustQuota,
+      ResetPassword,
+      ResetPinCode,
+      MenuItemType.Divider,
+      Suspend,
+      Unsuspend,
+      MenuItemType.Divider,
+      Restore,
+      Delete,
+    ];
   };
 
   const classes = {
@@ -51,9 +73,9 @@
   };
 </script>
 
-<CommandPaletteDefaultProvider name={$t('users')} actions={[Create]} />
+<CommandPaletteDefaultProvider name={$t('users')} actions={[Create, SendNotification]} />
 
-<AdminPageLayout breadcrumbs={[{ title: data.meta.title }]} actions={[Create]}>
+<AdminPageLayout breadcrumbs={[{ title: data.meta.title }]} actions={[Create, SendNotification]}>
   <Container center size="large">
     <Table class="mt-4" striped spacing="small" size="small">
       <TableHeader>
@@ -64,9 +86,16 @@
 
       <TableBody>
         {#each users as user (user.id)}
-          <TableRow color={user.deletedAt ? 'danger' : undefined}>
+          <TableRow color={user.deletedAt ? 'danger' : (user.status as any) === 'suspended' ? 'warning' : undefined}>
             <TableCell class={classes.column1}>
-              <Link href={Route.viewUser(user)}>{user.name}</Link>
+              <div class="flex items-center gap-2">
+                <Link href={Route.viewUser(user)}>{user.name}</Link>
+                {#if (user.status as any) === 'suspended'}
+                  <span class="rounded bg-amber-500/20 px-1.5 py-0.5 text-xs font-semibold text-amber-500">
+                    {$t('suspend')}ed
+                  </span>
+                {/if}
+              </div>
             </TableCell>
             <TableCell class={classes.column2}>{user.email}</TableCell>
             <TableCell class={classes.column3}>

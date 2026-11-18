@@ -60,6 +60,15 @@
   let scrollContainer: HTMLElement | undefined = $state();
   let hasScrolledToBottom = false;
   const isAlbumOwner = $derived(albumUsers[0].user.id === authManager.user.id);
+  const quickEmojis = ['❤️', '👍', '👎', '🎉', '🔥', '😂'];
+
+  const handleSendEmoji = async (emoji: string) => {
+    if (disabled) return;
+    await executeMutation(
+      createActivityMutation,
+      [{ activityCreateDto: { albumId, assetId, type: ReactionType.Comment, comment: emoji } }],
+    );
+  };
 
   const timeOptions: Intl.DateTimeFormatOptions = {
     year: 'numeric',
@@ -159,18 +168,38 @@
       >
         {#each activities as reaction, index (reaction.id)}
           {#if reaction.type === ReactionType.Comment}
-            <div class="mt-3 flex justify-start gap-4 rounded-lg bg-gray-200 p-3 dark:bg-gray-800">
-              <div class="flex items-center">
+            <div class="mt-3 flex justify-start gap-3 rounded-xl bg-gray-200/90 p-3 dark:bg-gray-800">
+              <div class="flex items-start pt-0.5">
                 <UserAvatar user={reaction.user} size="sm" />
               </div>
 
-              <div class="w-full self-center overflow-hidden text-sm/4 wrap-break-word">{reaction.comment}</div>
+              <div class="w-full flex-1 overflow-hidden">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-xs font-semibold text-immich-fg dark:text-immich-dark-fg">
+                    {reaction.user.name}
+                  </span>
+                  <span class="text-[11px] text-gray-500 dark:text-gray-400">
+                    {timeSince(luxon.DateTime.fromISO(reaction.createdAt, { locale: $locale }))}
+                  </span>
+                </div>
+                {#if quickEmojis.includes(reaction.comment || '')}
+                  <div class="mt-1 flex items-center gap-2">
+                    <span class="text-2xl">{reaction.comment}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">reacted {reaction.comment}</span>
+                  </div>
+                {:else}
+                  <div class="mt-1 text-sm/5 wrap-break-word text-immich-fg dark:text-immich-dark-fg">
+                    {reaction.comment}
+                  </div>
+                {/if}
+              </div>
+
               {#if assetId === undefined && reaction.assetId}
-                <a class="aspect-square size-19" href={Route.viewAlbumAsset({ albumId, assetId: reaction.assetId })}>
+                <a class="aspect-square size-14 shrink-0 overflow-hidden rounded-lg" href={Route.viewAlbumAsset({ albumId, assetId: reaction.assetId })}>
                   <img
-                    class="size-19 rounded-lg object-cover"
+                    class="size-14 rounded-lg object-cover"
                     src={getAssetMediaUrl({ id: reaction.assetId })}
-                    alt="Profile picture of {reaction.user.name}, who commented on this asset"
+                    alt="Asset preview"
                   />
                 </a>
               {/if}
@@ -179,7 +208,7 @@
 
             {#if (index !== activities.length - 1 && !shouldGroup(activities[index].createdAt, activities[index + 1].createdAt)) || index === activities.length - 1}
               <div
-                class="w-full px-2 pt-1 text-right text-sm text-gray-500 dark:text-gray-300"
+                class="w-full px-2 pt-1 text-right text-xs text-gray-500 dark:text-gray-400"
                 title={new Date(reaction.createdAt).toLocaleDateString(undefined, timeOptions)}
               >
                 {timeSince(luxon.DateTime.fromISO(reaction.createdAt, { locale: $locale }))}
@@ -189,32 +218,30 @@
             {const type = $derived(
               assetType === AssetTypeEnum.Image || assetType === AssetTypeEnum.Video ? assetType.toLowerCase() : null,
             )}
-            <div class="relative">
-              <div class="mt-3 flex items-center gap-4 p-3 text-sm">
-                <div class="text-primary"><Icon icon={mdiThumbUp} size="20" /></div>
-
-                <div class="w-full" title={`${reaction.user.name} (${reaction.user.email})`}>
-                  {$t('user_liked', { values: { user: reaction.user.name, type } })}
+            <div class="relative mt-2 flex items-center justify-between rounded-xl bg-gray-100/70 p-2.5 dark:bg-gray-800/50">
+              <div class="flex items-center gap-2.5">
+                <UserAvatar user={reaction.user} size="xs" />
+                <div class="flex items-center gap-1.5 text-xs">
+                  <span class="font-semibold text-immich-fg dark:text-immich-dark-fg">{reaction.user.name}</span>
+                  <span class="text-gray-500">liked this</span>
+                  <span class="text-primary"><Icon icon={mdiThumbUp} size="16" /></span>
                 </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] text-gray-500 dark:text-gray-400">
+                  {timeSince(luxon.DateTime.fromISO(reaction.createdAt, { locale: $locale }))}
+                </span>
                 {#if assetId === undefined && reaction.assetId}
-                  <a class="aspect-square size-19" href={Route.viewAlbumAsset({ albumId, assetId: reaction.assetId })}>
+                  <a class="aspect-square size-10 shrink-0 overflow-hidden rounded-lg" href={Route.viewAlbumAsset({ albumId, assetId: reaction.assetId })}>
                     <img
-                      class="size-19 rounded-lg object-cover"
+                      class="size-10 rounded-lg object-cover"
                       src={getAssetMediaUrl({ id: reaction.assetId })}
-                      alt="Profile picture of {reaction.user.name}, who liked this asset"
+                      alt="Asset preview"
                     />
                   </a>
                 {/if}
                 {@render reactionMenu(reaction, $t('reaction_options'))}
               </div>
-              {#if (index !== activities.length - 1 && isTenMinutesApart(activities[index].createdAt, activities[index + 1].createdAt)) || index === activities.length - 1}
-                <div
-                  class="w-full px-2 pt-1 text-right text-sm text-gray-500 dark:text-gray-300"
-                  title={new Date(reaction.createdAt).toLocaleDateString(navigator.language, timeOptions)}
-                >
-                  {timeSince(luxon.DateTime.fromISO(reaction.createdAt, { locale: $locale }))}
-                </div>
-              {/if}
             </div>
           {/if}
         {/each}
@@ -223,8 +250,22 @@
   </div>
 
   <div class="absolute bottom-0 w-full">
-    <div class="flex items-center justify-center p-2" bind:clientHeight={chatHeight}>
-      <div class="flex h-fit w-full gap-4 rounded-3xl bg-gray-200 p-2 text-immich-dark-gray">
+    <div class="flex flex-col gap-1.5 p-2" bind:clientHeight={chatHeight}>
+      {#if !disabled}
+        <div class="flex items-center justify-center gap-1 rounded-2xl bg-gray-200/70 p-1 dark:bg-gray-800/70">
+          {#each quickEmojis as emoji}
+            <button
+              type="button"
+              class="flex size-8 items-center justify-center rounded-full text-base transition-transform hover:scale-125 hover:bg-white/60 dark:hover:bg-white/10 active:scale-95"
+              onclick={() => handleSendEmoji(emoji)}
+              title={`React ${emoji}`}
+            >
+              {emoji}
+            </button>
+          {/each}
+        </div>
+      {/if}
+      <div class="flex h-fit w-full gap-3 rounded-3xl bg-gray-200 p-2 text-immich-dark-gray dark:bg-gray-800">
         <div>
           <UserAvatar user={authManager.user} size="md" noTitle />
         </div>

@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Endpoint, HistoryBuilder } from 'src/decorators.js';
 import type { AuthDto } from 'src/dtos/auth.dto.js';
@@ -6,6 +6,7 @@ import { SystemConfigSmtpDto } from 'src/dtos/config.dto.js';
 import {
   NotificationCreateDto,
   NotificationDto,
+  NotificationSearchDto,
   TemplateDto,
   TemplateResponseDto,
   TestEmailResponseDto,
@@ -14,11 +15,35 @@ import { ApiTag, Permission } from 'src/enum.js';
 import { Auth, Authenticated } from 'src/middleware/auth.guard.js';
 import { EmailTemplate } from 'src/repositories/email.repository.js';
 import { NotificationAdminService } from 'src/services/notification-admin.service.js';
+import { UUIDParamDto } from 'src/validation.js';
 
 @ApiTags(ApiTag.NotificationsAdmin)
 @Controller('admin/notifications')
 export class NotificationAdminController {
   constructor(private service: NotificationAdminService) {}
+
+  @Get()
+  @Authenticated({ permission: Permission.NotificationRead, admin: true })
+  @Endpoint({
+    summary: 'Retrieve all notifications',
+    description: 'Retrieve all notifications across all users.',
+    history: new HistoryBuilder().added('v1').beta('v1').stable('v2'),
+  })
+  getNotificationsAdmin(@Query() dto: NotificationSearchDto): Promise<NotificationDto[]> {
+    return this.service.search(dto);
+  }
+
+  @Delete(':id')
+  @Authenticated({ permission: Permission.NotificationDelete, admin: true })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Endpoint({
+    summary: 'Delete notification as admin',
+    description: 'Delete any notification by ID.',
+    history: new HistoryBuilder().added('v1').beta('v1').stable('v2'),
+  })
+  deleteNotificationAdmin(@Param() { id }: UUIDParamDto): Promise<void> {
+    return this.service.delete(id);
+  }
 
   @Post()
   @Authenticated({ permission: Permission.NotificationCreate, admin: true })

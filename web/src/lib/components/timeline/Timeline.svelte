@@ -65,6 +65,7 @@
         asset: TimelineAsset,
       ) => void,
     ) => void;
+    timeGranularity?: 'day' | 'month' | 'year';
   }
 
   let {
@@ -87,6 +88,7 @@
     empty,
     customThumbnailLayout,
     onThumbnailClick,
+    timeGranularity = 'day',
   }: Props = $props();
 
   timelineManager = new TimelineManager();
@@ -109,16 +111,29 @@
   const usingMobileDevice = $derived(mediaQueryManager.pointerCoarse);
 
   $effect(() => {
-    const layoutOptions = maxMd
-      ? {
-          rowHeight: 100,
-          headerHeight: 32,
-        }
-      : {
-          rowHeight: 235,
-          headerHeight: 48,
-        };
-    timelineManager.setLayoutOptions(layoutOptions);
+    let rowHeight = 220;
+    let headerHeight = 44;
+    let gap = 6;
+
+    if (timeGranularity === 'year') {
+      rowHeight = maxMd ? 45 : 75;
+      headerHeight = maxMd ? 18 : 24;
+      gap = 2;
+    } else if (timeGranularity === 'month') {
+      rowHeight = maxMd ? 75 : 135;
+      headerHeight = maxMd ? 24 : 32;
+      gap = maxMd ? 3 : 4;
+    } else {
+      rowHeight = maxMd ? 110 : 220;
+      headerHeight = maxMd ? 32 : 44;
+      gap = maxMd ? 4 : 6;
+    }
+
+    timelineManager.setLayoutOptions({
+      rowHeight,
+      headerHeight,
+      gap,
+    });
   });
 
   $effect(() => {
@@ -585,6 +600,7 @@
 
 {#if timelineManager.months.length > 0}
   <Scrubber
+    {timeGranularity}
     {timelineManager}
     height={timelineManager.viewportHeight}
     timelineTopOffset={timelineManager.topSectionHeight}
@@ -658,6 +674,7 @@
             {customThumbnailLayout}
             {singleSelect}
             {timelineMonth}
+            {timeGranularity}
             manager={timelineManager}
             onTimelineDaySelect={handleGroupSelect}
           >

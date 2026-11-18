@@ -262,7 +262,23 @@ export const copyToClipboard = async (secret: string | unknown) => {
 
   try {
     const value = typeof secret === 'string' ? secret : JSON.stringify(secret, jsonReplacer, 2);
-    await navigator.clipboard.writeText(value);
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(value);
+    } else {
+      const textArea = document.createElement('textarea');
+      textArea.value = value;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      textArea.remove();
+      if (!successful) {
+        throw new Error('execCommand copy failed');
+      }
+    }
     toastManager.info($t('copied_to_clipboard'));
   } catch (error) {
     handleError(error, $t('errors.unable_to_copy_to_clipboard'));
@@ -392,13 +408,68 @@ export const memoryLaneTitle = derived(t, ($t) => {
       const now = DateTime.now();
       const memoryDate = DateTime.fromISO(memory.memoryAt, { zone: 'utc' });
 
-      return memoryDate.day === now.day && memoryDate.month === now.month
+      return memoryDate.day === now.day && memoryDate.month === now.month && memory.data?.year
         ? $t('years_ago', { values: { years: now.year - memory.data.year } })
         : memoryDate.toLocaleString(DateTime.DATE_MED, { locale: get(locale) });
     }
 
-    if (memory.type === MemoryType.Birthday && memory.data.personName) {
-      return $t('birthday_memory_title', { values: { name: memory.data.personName } });
+    if (memory.type === MemoryType.Birthday && (memory.data as any)?.personName) {
+      return $t('birthday_memory_title', { values: { name: (memory.data as any).personName } });
+    }
+
+    const data = (memory.data || {}) as Record<string, any>;
+    if (data.title) {
+      return data.title;
+    }
+
+    if (memory.type === MemoryType.ThisWeekLastYear) {
+      const now = DateTime.now();
+      const years = data.year ? now.year - data.year : 1;
+      return $t('this_week_last_year_title', { values: { years } });
+    }
+
+    if (memory.type === MemoryType.RecentHighlights) {
+      return $t('recent_highlights_title');
+    }
+
+    if (memory.type === MemoryType.SeasonSummary) {
+      return $t('season_summary_title', { values: { season: data.season || 'Season' } });
+    }
+
+    if (memory.type === MemoryType.MilestoneAnniversary) {
+      return $t('milestone_anniversary_title', { values: { years: data.yearsAgo || 1 } });
+    }
+
+    if (memory.type === MemoryType.PeoplePetGrowth) {
+      return $t('people_pet_growth_title', { values: { name: data.personName || $t('unknown') } });
+    }
+
+    if (memory.type === MemoryType.TripEvent) {
+      return $t('trip_event_title', { values: { location: data.locationName || data.city || 'Getaway' } });
+    }
+
+    if (memory.type === MemoryType.VisualPattern) {
+      return $t('visual_pattern_title', { values: { pattern: data.patternType || 'Visual' } });
+    }
+
+    if (memory.type === MemoryType.HolidayCelebration) {
+      return $t('holiday_celebration_title', { values: { holiday: data.holidayName || 'Holiday' } });
+    }
+
+    if (memory.type === MemoryType.RemixCollage) {
+      return $t('remix_collage_title', { values: { style: data.style || 'Artistic' } });
+    }
+
+    if (memory.type === MemoryType.StylizedPhoto) {
+      return $t('stylized_photo_title');
+    }
+
+    if (memory.type === MemoryType.CinematicMoments) {
+      return $t('cinematic_moments_title');
+    }
+
+    if (memory.type === MemoryType.Collaborative) {
+      return $t('collaborative_title', { values: { album: data.albumName || 'Album' } });
     }
 
     return $t('unknown');

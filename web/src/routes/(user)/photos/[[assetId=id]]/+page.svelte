@@ -36,6 +36,7 @@
   import { t } from 'svelte-i18n';
 
   let timelineManager = $state<TimelineManager>() as TimelineManager;
+  let timeGranularity = $state<'day' | 'month' | 'year'>('day');
   const options = { visibility: AssetVisibility.Timeline, withStacked: true, withPartners: true };
 
   let selectedAssets = $derived(assetMultiSelectManager.assets);
@@ -89,10 +90,43 @@
 </script>
 
 <UserPageLayout hideNavbar={assetMultiSelectManager.selectionActive} scrollbar={false}>
+  <div
+    class="fixed top-20 right-14 z-20 flex items-center rounded-full border border-black/10 dark:border-white/10 bg-white/90 dark:bg-gray-900/90 p-1 shadow-md backdrop-blur-md transition-all max-md:top-16 max-md:right-10"
+  >
+    <button
+      type="button"
+      class="rounded-full px-3.5 py-1 text-xs font-semibold transition-all cursor-pointer {timeGranularity === 'day'
+        ? 'bg-primary text-white shadow-xs'
+        : 'text-gray-600 hover:text-primary dark:text-gray-300'}"
+      onclick={() => (timeGranularity = 'day')}
+    >
+      Day
+    </button>
+    <button
+      type="button"
+      class="rounded-full px-3.5 py-1 text-xs font-semibold transition-all cursor-pointer {timeGranularity === 'month'
+        ? 'bg-primary text-white shadow-xs'
+        : 'text-gray-600 hover:text-primary dark:text-gray-300'}"
+      onclick={() => (timeGranularity = 'month')}
+    >
+      Month
+    </button>
+    <button
+      type="button"
+      class="rounded-full px-3.5 py-1 text-xs font-semibold transition-all cursor-pointer {timeGranularity === 'year'
+        ? 'bg-primary text-white shadow-xs'
+        : 'text-gray-600 hover:text-primary dark:text-gray-300'}"
+      onclick={() => (timeGranularity = 'year')}
+    >
+      Year
+    </button>
+  </div>
+
   <Timeline
     enableRouting={true}
     bind:timelineManager
     {options}
+    {timeGranularity}
     assetInteraction={assetMultiSelectManager}
     removeAction={AssetAction.ARCHIVE}
     onEscape={handleEscape}

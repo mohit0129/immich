@@ -8,8 +8,14 @@
   let currentPinCode = $state('');
   let newPinCode = $state('');
   let confirmPinCode = $state('');
+  let currentPinLength = $state<4 | 6>(6);
+  let newPinLength = $state<4 | 6>(6);
   let isLoading = $state(false);
-  let canSubmit = $derived(currentPinCode.length === 6 && confirmPinCode.length === 6 && newPinCode === confirmPinCode);
+  let canSubmit = $derived(
+    currentPinCode.length === currentPinLength &&
+      confirmPinCode.length === newPinLength &&
+      newPinCode === confirmPinCode,
+  );
 
   const handleSubmit = async (event: Event) => {
     event.preventDefault();
@@ -39,14 +45,52 @@
 <form autocomplete="off" onsubmit={handleSubmit}>
   <div class="flex flex-col place-content-center place-items-center gap-6">
     <Heading>{$t('change_pin_code')}</Heading>
+    <div class="flex items-center gap-2">
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Current PIN:</span>
+      <div class="flex rounded-full bg-gray-100 p-1 dark:bg-gray-800">
+        <button
+          type="button"
+          class="rounded-full px-3 py-0.5 text-xs font-medium transition-colors {currentPinLength === 4 ? 'bg-primary text-white shadow' : 'text-gray-600 dark:text-gray-300 hover:text-primary'}"
+          onclick={() => { currentPinLength = 4; currentPinCode = ''; }}
+        >
+          4 digits
+        </button>
+        <button
+          type="button"
+          class="rounded-full px-3 py-0.5 text-xs font-medium transition-colors {currentPinLength === 6 ? 'bg-primary text-white shadow' : 'text-gray-600 dark:text-gray-300 hover:text-primary'}"
+          onclick={() => { currentPinLength = 6; currentPinCode = ''; }}
+        >
+          6 digits
+        </button>
+      </div>
+    </div>
     <Field label={$t('current_pin_code')}>
-      <PinInput bind:value={currentPinCode} />
+      <PinInput length={currentPinLength} bind:value={currentPinCode} />
     </Field>
+    <div class="flex items-center gap-2">
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">New PIN:</span>
+      <div class="flex rounded-full bg-gray-100 p-1 dark:bg-gray-800">
+        <button
+          type="button"
+          class="rounded-full px-3 py-0.5 text-xs font-medium transition-colors {newPinLength === 4 ? 'bg-primary text-white shadow' : 'text-gray-600 dark:text-gray-300 hover:text-primary'}"
+          onclick={() => { newPinLength = 4; newPinCode = ''; confirmPinCode = ''; }}
+        >
+          4 digits
+        </button>
+        <button
+          type="button"
+          class="rounded-full px-3 py-0.5 text-xs font-medium transition-colors {newPinLength === 6 ? 'bg-primary text-white shadow' : 'text-gray-600 dark:text-gray-300 hover:text-primary'}"
+          onclick={() => { newPinLength = 6; newPinCode = ''; confirmPinCode = ''; }}
+        >
+          6 digits
+        </button>
+      </div>
+    </div>
     <Field label={$t('new_pin_code')}>
-      <PinInput bind:value={newPinCode} />
+      <PinInput length={newPinLength} bind:value={newPinCode} />
     </Field>
     <Field label={$t('confirm_new_pin_code')}>
-      <PinInput bind:value={confirmPinCode} />
+      <PinInput length={newPinLength} bind:value={confirmPinCode} />
     </Field>
     <button type="button" onclick={() => modalManager.show(PinCodeResetModal, {})}>
       <Text color="muted" class="underline" size="small">{$t('forgot_pin_code_question')}</Text>

@@ -52,7 +52,9 @@ const NotificationCreateSchema = z
     description: z.string().nullish().describe('Notification description'),
     data: z.record(z.string(), z.unknown()).optional().describe('Additional notification data'),
     readAt: isoDatetimeToDate.nullish().describe('Date when notification was read'),
-    userId: z.uuidv4().describe('User ID to send notification to'),
+    userId: z.uuidv4().optional().describe('User ID to send notification to'),
+    userIds: z.array(z.uuidv4()).optional().describe('User IDs to send notification to'),
+    allUsers: z.boolean().optional().describe('Send notification to all users'),
   })
   .meta({ id: 'NotificationCreateDto' });
 

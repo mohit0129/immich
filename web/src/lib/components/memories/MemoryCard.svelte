@@ -1,7 +1,16 @@
 <script lang="ts">
   import { MemoryType } from '@immich/sdk';
   import { Icon, type CarouselImageItem } from '@immich/ui';
-  import { mdiCakeVariant, mdiHeart } from '@mdi/js';
+  import {
+    mdiAccountGroup,
+    mdiCakeVariant,
+    mdiCalendarSync,
+    mdiFilmstrip,
+    mdiHeart,
+    mdiMapMarker,
+    mdiPalette,
+    mdiPartyPopper,
+  } from '@mdi/js';
   import BirthdayConfetti from './BirthdayConfetti.svelte';
 
   type Props = {
@@ -64,6 +73,24 @@
           {/if}
         {/key}
       </span>
+      <span class="min-w-0 wrap-break-word">{item.title}</span>
+    {:else if item.type === MemoryType.TripEvent}
+      <Icon icon={mdiMapMarker} size="1.25em" class="shrink-0 text-white" />
+      <span class="min-w-0 wrap-break-word">{item.title}</span>
+    {:else if item.type === MemoryType.ThisWeekLastYear}
+      <Icon icon={mdiCalendarSync} size="1.25em" class="shrink-0 text-white" />
+      <span class="min-w-0 wrap-break-word">{item.title}</span>
+    {:else if item.type === MemoryType.HolidayCelebration || item.type === MemoryType.MilestoneAnniversary}
+      <Icon icon={mdiPartyPopper} size="1.25em" class="shrink-0 text-white" />
+      <span class="min-w-0 wrap-break-word">{item.title}</span>
+    {:else if item.type === MemoryType.Collaborative}
+      <Icon icon={mdiAccountGroup} size="1.25em" class="shrink-0 text-white" />
+      <span class="min-w-0 wrap-break-word">{item.title}</span>
+    {:else if item.type === MemoryType.VisualPattern}
+      <Icon icon={mdiPalette} size="1.25em" class="shrink-0 text-white" />
+      <span class="min-w-0 wrap-break-word">{item.title}</span>
+    {:else if item.type === MemoryType.CinematicMoments || item.type === MemoryType.RemixCollage}
+      <Icon icon={mdiFilmstrip} size="1.25em" class="shrink-0 text-white" />
       <span class="min-w-0 wrap-break-word">{item.title}</span>
     {:else}
       {item.title}

@@ -156,6 +156,12 @@ export const Route = {
   integrityReportFile: (reportId: string) => `${getBaseUrl()}/admin/integrity/report/${reportId}/file`,
   integrityReportCsv: (reportType: IntegrityReport) => `${getBaseUrl()}/admin/integrity/report/${reportType}/csv`,
 
+
+
+  // notifications
+  notifications: () => '/notifications',
+  adminNotifications: () => '/admin/notifications',
+
   // continue helper for ensuring same-origin URLs
   continue: (url: string | null, fallback: string): string | URL => {
     const resolved = new URL(url ?? fallback, document.baseURI);

@@ -11,6 +11,9 @@ import {
   UserAdminResponseDto,
   UserAdminSearchDto,
   UserAdminUpdateDto,
+  UserQuotaUpdateDto,
+  UserStatusUpdateDto,
+  UserTierUpdateDto,
   mapUserAdmin,
 } from 'src/dtos/user.dto.js';
 import { JobName, UserMetadataKey, UserStatus } from 'src/enum.js';
@@ -60,7 +63,12 @@ export class UserAdminService extends BaseService {
       throw new BadRequestException('Admin status can only be changed by another admin');
     }
 
-    if (dto.quotaSizeInBytes && user.quotaSizeInBytes !== dto.quotaSizeInBytes) {
+    const quota = dto.quotaSizeInBytes ?? (dto as any).quotaBytes;
+    if (quota !== undefined) {
+      dto.quotaSizeInBytes = quota;
+    }
+
+    if (dto.quotaSizeInBytes !== undefined && user.quotaSizeInBytes !== dto.quotaSizeInBytes) {
       await this.userRepository.syncUsage(id);
     }
 
@@ -87,6 +95,13 @@ export class UserAdminService extends BaseService {
       dto.pinCode = await this.cryptoRepository.hashBcrypt(dto.pinCode, SALT_ROUNDS);
     }
 
+    if (dto.status === UserStatus.Suspended) {
+      if (auth.user.id === id) {
+        throw new BadRequestException('Cannot suspend your own account');
+      }
+      await this.sessionRepository.invalidateAll({ userId: id });
+    }
+
     if (dto.storageLabel === '') {
       dto.storageLabel = null;
     }
@@ -94,6 +109,35 @@ export class UserAdminService extends BaseService {
     const updatedUser = await this.userRepository.update(id, { ...dto, updatedAt: new Date() });
 
     return mapUserAdmin(updatedUser);
+  }
+
+  async updateQuota(auth: AuthDto, id: string, dto: UserQuotaUpdateDto): Promise<UserAdminResponseDto> {
+    const quota = dto.quotaSizeInBytes !== undefined ? dto.quotaSizeInBytes : (dto.quotaBytes ?? null);
+    return this.update(auth, id, { quotaSizeInBytes: quota });
+  }
+
+  async updateTier(auth: AuthDto, id: string, dto: UserTierUpdateDto): Promise<UserAdminResponseDto> {
+    const GIB = 1024 * 1024 * 1024;
+    const TIB = 1024 * GIB;
+    let quotaSizeInBytes: number | null = null;
+    const tier = dto.tier.toLowerCase();
+    if (tier.includes('15') || tier.includes('free')) {
+      quotaSizeInBytes = 15 * GIB;
+    } else if (tier.includes('100') || tier.includes('basic')) {
+      quotaSizeInBytes = 100 * GIB;
+    } else if (tier.includes('200') || tier.includes('standard')) {
+      quotaSizeInBytes = 200 * GIB;
+    } else if (tier.includes('2t') || tier.includes('premium')) {
+      quotaSizeInBytes = 2 * TIB;
+    } else if (tier.includes('unlimited')) {
+      quotaSizeInBytes = null;
+    }
+    return this.update(auth, id, { quotaSizeInBytes });
+  }
+
+  async updateStatus(auth: AuthDto, id: string, dto: UserStatusUpdateDto): Promise<UserAdminResponseDto> {
+    const status = dto.status.toLowerCase() === 'suspended' ? UserStatus.Suspended : UserStatus.Active;
+    return this.update(auth, id, { status });
   }
 
   async delete(auth: AuthDto, id: string, dto: UserAdminDeleteDto): Promise<UserAdminResponseDto> {

@@ -13,6 +13,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { stripVTControlCharacters } from 'node:util';
 
+dotenv.config({ quiet: true });
+
 const buildDir = 'build';
 const inlineTags = ['script', 'style'];
 

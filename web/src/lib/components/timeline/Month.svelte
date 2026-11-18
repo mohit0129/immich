@@ -29,6 +29,7 @@
     assetInteraction: AssetMultiSelectManager;
     timelineMonth: TimelineMonth;
     manager: VirtualScrollManager;
+    timeGranularity?: 'day' | 'month' | 'year';
     onTimelineDaySelect: (timelineDay: TimelineDay, assets: TimelineAsset[]) => void;
   };
   let {
@@ -38,6 +39,7 @@
     assetInteraction,
     timelineMonth,
     manager,
+    timeGranularity = 'day',
     onTimelineDaySelect,
   }: Props = $props();
 
@@ -69,31 +71,57 @@
     onmouseenter={() => (hoveredTimelineDay = timelineDay.groupTitle)}
     onmouseleave={() => (hoveredTimelineDay = null)}
   >
-    <!-- Day title -->
     <div
-      class="flex h-6 place-items-center pt-7 pb-5 text-xs font-medium text-immich-fg max-md:pt-5 max-md:pb-3 md:text-sm dark:text-immich-dark-fg"
+      class="flex items-center text-xs font-medium text-immich-fg md:text-sm dark:text-immich-dark-fg select-none overflow-hidden px-1"
+      style:height={timelineMonth.timelineManager.headerHeight + 'px'}
       style:width={timelineDay.width + 'px'}
     >
-      {#if !singleSelect}
+      {#if !singleSelect && timeGranularity === 'day'}
         {const isTimelineDaySelected = $derived(assetInteraction.selectedGroup.has(timelineDay.groupTitle))}
         <div
-          class="w-0 overflow-hidden transition-all duration-200 ease-out hover:cursor-pointer"
-          class:w-8={hoveredTimelineDay === timelineDay.groupTitle || isTimelineDaySelected}
+          class="w-0 overflow-hidden transition-all duration-200 ease-out hover:cursor-pointer flex items-center justify-center shrink-0"
+          class:w-7={hoveredTimelineDay === timelineDay.groupTitle || isTimelineDaySelected}
           data-testid="select-day"
           onclick={() => onTimelineDaySelect(timelineDay, assetsSnapshot(timelineDay.getAssets()))}
           onkeydown={() => onTimelineDaySelect(timelineDay, assetsSnapshot(timelineDay.getAssets()))}
         >
           {#if isTimelineDaySelected}
-            <Icon icon={mdiCheckCircle} size="24" class="text-primary" />
+            <Icon icon={mdiCheckCircle} size="20" class="text-primary" />
           {:else}
-            <Icon icon={mdiCircleOutline} size="24" class="text-light-500" />
+            <Icon icon={mdiCircleOutline} size="20" class="text-light-500" />
           {/if}
         </div>
       {/if}
 
-      <span class="w-full truncate first-letter:capitalize" title={getTimelineDayFullDate(timelineDay)}>
-        {timelineDay.groupTitle}
-      </span>
+      <div class="flex items-baseline gap-2 truncate">
+        {#if timeGranularity === 'year'}
+          {#if groupIndex === 0}
+            <span class="text-base font-bold text-immich-primary">
+              {timelineMonth.yearMonth.year}
+            </span>
+          {/if}
+          <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">
+            {timelineMonth.title}
+          </span>
+        {:else if timeGranularity === 'month'}
+          {#if groupIndex === 0}
+            <span class="text-sm font-bold text-immich-primary">
+              {timelineMonth.title}
+            </span>
+            <span class="text-xs text-gray-400 dark:text-gray-500">·</span>
+          {/if}
+          <span class="text-xs font-medium text-immich-fg dark:text-immich-dark-fg">
+            {timelineDay.groupTitle}
+          </span>
+        {:else}
+          <span
+            class="w-full truncate first-letter:capitalize font-medium text-immich-fg dark:text-immich-dark-fg"
+            title={getTimelineDayFullDate(timelineDay)}
+          >
+            {timelineDay.groupTitle}
+          </span>
+        {/if}
+      </div>
     </div>
 
     <AssetLayout

@@ -32,6 +32,19 @@
 
   const viewport: Viewport = $state({ width: 0, height: 0 });
 
+  let displayTitle = $derived.by(() => {
+    const rawDesc = sharedLink?.description?.replace(/\[APPROVAL_REQUIRED\]/g, '').trim();
+    const baseName = rawDesc || $t('public_share');
+    if (isOwned) {
+      return `${baseName} (Shared)`;
+    }
+    const myName = authManager.authenticated ? authManager.user.name : '';
+    if (myName) {
+      return `${baseName} shared to ${myName}`;
+    }
+    return baseName;
+  });
+
   let assets = $derived(sharedLink.assets);
 
   dragAndDropFilesStore.subscribe((value) => {
@@ -106,9 +119,12 @@
     {:else}
       <ControlAppBar>
         {#snippet leading()}
-          <a data-sveltekit-preload-data="hover" class="ms-4" href="/">
-            <Logo variant={mediaQueryManager.maxMd ? 'icon' : 'inline'} class="min-w-10" />
-          </a>
+          <div class="flex items-center gap-3 ms-4">
+            <a data-sveltekit-preload-data="hover" href="/">
+              <Logo variant={mediaQueryManager.maxMd ? 'icon' : 'inline'} class="min-w-10" />
+            </a>
+            <span class="text-sm font-semibold truncate max-w-xs dark:text-white">{displayTitle}</span>
+          </div>
         {/snippet}
 
         {#snippet trailing()}

@@ -97,11 +97,39 @@ const UserAdminUpdateSchema = z
     storageLabel: z.string().pipe(sanitizeFilename).nullish().describe('Storage label'),
     shouldChangePassword: z.boolean().optional().describe('Require password change on next login'),
     quotaSizeInBytes: z.int().min(0).nullish().describe('Storage quota in bytes'),
+    quotaBytes: z.int().min(0).nullish().describe('Storage quota alias in bytes'),
     isAdmin: z.boolean().optional().describe('Grant admin privileges'),
+    status: UserStatusSchema.optional().describe('User status'),
   })
   .meta({ id: 'UserAdminUpdateDto' });
 
 export class UserAdminUpdateDto extends createZodDto(UserAdminUpdateSchema) {}
+
+const UserQuotaUpdateSchema = z
+  .object({
+    quotaBytes: z.coerce.number().int().min(0).nullish().describe('Quota in bytes'),
+    quotaSizeInBytes: z.coerce.number().int().min(0).nullish().describe('Storage quota in bytes'),
+  })
+  .meta({ id: 'UserQuotaUpdateDto' });
+
+export class UserQuotaUpdateDto extends createZodDto(UserQuotaUpdateSchema) {}
+
+const UserTierUpdateSchema = z
+  .object({
+    tier: z.string().describe('Tier name or preset ID'),
+  })
+  .meta({ id: 'UserTierUpdateDto' });
+
+export class UserTierUpdateDto extends createZodDto(UserTierUpdateSchema) {}
+
+const UserStatusUpdateSchema = z
+  .object({
+    status: z.string().describe('User status'),
+    role: z.string().optional().describe('User role'),
+  })
+  .meta({ id: 'UserStatusUpdateDto' });
+
+export class UserStatusUpdateDto extends createZodDto(UserStatusUpdateSchema) {}
 
 const UserAdminDeleteSchema = z
   .object({

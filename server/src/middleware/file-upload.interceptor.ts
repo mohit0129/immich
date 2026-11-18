@@ -16,6 +16,7 @@ import { StorageRepository } from 'src/repositories/storage.repository.js';
 import { AssetMediaService } from 'src/services/asset-media.service.js';
 import type { ImmichFile, UploadFile, UploadFiles } from 'src/types.js';
 import { asUploadRequest, mapToUploadFile } from 'src/utils/asset.util.js';
+import { getFileNameWithoutExtension, getFilenameExtension } from 'src/utils/file.js';
 
 export function getFile(files: UploadFiles, property: 'assetData' | 'sidecarData') {
   const file = files[property]?.[0];
@@ -108,11 +109,18 @@ export class FileUploadInterceptor implements NestInterceptor {
       (file as ImmichMulterFile).uuid = randomUUID();
 
       const uploadRequest = asUploadRequest(request, file);
+      const folder = this.assetService.getUploadFolder(uploadRequest);
+      let filename = this.assetService.getUploadFilename(uploadRequest);
+      let path = join(folder, filename);
 
-      const path = join(
-        this.assetService.getUploadFolder(uploadRequest),
-        this.assetService.getUploadFilename(uploadRequest),
-      );
+      if (this.storageRepository.existsSync(path)) {
+        const ext = getFilenameExtension(filename);
+        const nameWithoutExt = getFileNameWithoutExtension(filename);
+        filename = `${nameWithoutExt}_${(file as ImmichMulterFile).uuid.slice(0, 8)}${ext}`;
+        path = join(folder, filename);
+      }
+
+      file.path = path;
 
       const writeStream = this.storageRepository.createWriteStream(path);
       const hash = file.fieldname === UploadFieldName.ASSET_DATA ? createHash('sha1') : null;

@@ -27,6 +27,7 @@ export type AuthUser = {
   email: string;
   quotaUsageInBytes: number;
   quotaSizeInBytes: number | null;
+  status: UserStatus;
 };
 
 export type AlbumUser = {
@@ -390,9 +391,24 @@ export const columns = {
     'asset_file.isProgressive',
     'asset_file.isTransparent',
   ],
-  authUser: ['user.id', 'user.name', 'user.email', 'user.isAdmin', 'user.quotaUsageInBytes', 'user.quotaSizeInBytes'],
+  authUser: [
+    'user.id',
+    'user.name',
+    'user.email',
+    'user.isAdmin',
+    'user.quotaUsageInBytes',
+    'user.quotaSizeInBytes',
+    'user.status',
+  ],
   authApiKey: ['api_key.id', 'api_key.permissions'],
-  authSession: ['session.id', 'session.updatedAt', 'session.pinExpiresAt', 'session.appVersion'],
+  authSession: [
+    'session.id',
+    'session.updatedAt',
+    'session.pinExpiresAt',
+    'session.appVersion',
+    'session.deviceOS',
+    'session.deviceType',
+  ],
   user: userColumns,
   user2: user2Columns,
   userPrefix: [

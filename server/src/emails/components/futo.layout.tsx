@@ -5,7 +5,7 @@ import tailwindPresetEmail from 'tailwindcss-preset-email';
 import { ImmichFooter } from 'src/emails/components/footer.template.js';
 
 interface FutoLayoutProps {
-  children: React.ReactNode;
+  children: any;
   preview: string;
 }
 

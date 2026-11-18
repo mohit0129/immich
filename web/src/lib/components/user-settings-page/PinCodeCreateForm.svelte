@@ -13,8 +13,9 @@
 
   let newPinCode = $state('');
   let confirmPinCode = $state('');
+  let pinLength = $state<4 | 6>(6);
   let isLoading = $state(false);
-  let canSubmit = $derived(confirmPinCode.length === 6 && newPinCode === confirmPinCode);
+  let canSubmit = $derived(confirmPinCode.length === pinLength && newPinCode === confirmPinCode);
 
   const handleSubmit = async (event: Event) => {
     event.preventDefault();
@@ -46,11 +47,30 @@
     {#if showLabel}
       <Heading>{$t('setup_pin_code')}</Heading>
     {/if}
+    <div class="flex items-center gap-2">
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">PIN length:</span>
+      <div class="flex rounded-full bg-gray-100 p-1 dark:bg-gray-800">
+        <button
+          type="button"
+          class="rounded-full px-3 py-0.5 text-xs font-medium transition-colors {pinLength === 4 ? 'bg-primary text-white shadow' : 'text-gray-600 dark:text-gray-300 hover:text-primary'}"
+          onclick={() => { pinLength = 4; resetForm(); }}
+        >
+          4 digits
+        </button>
+        <button
+          type="button"
+          class="rounded-full px-3 py-0.5 text-xs font-medium transition-colors {pinLength === 6 ? 'bg-primary text-white shadow' : 'text-gray-600 dark:text-gray-300 hover:text-primary'}"
+          onclick={() => { pinLength = 6; resetForm(); }}
+        >
+          6 digits
+        </button>
+      </div>
+    </div>
     <Field label={$t('new_pin_code')}>
-      <PinInput bind:value={newPinCode} />
+      <PinInput length={pinLength} bind:value={newPinCode} />
     </Field>
     <Field label={$t('confirm_new_pin_code')}>
-      <PinInput bind:value={confirmPinCode} />
+      <PinInput length={pinLength} bind:value={confirmPinCode} />
     </Field>
   </div>
 

@@ -26,6 +26,7 @@
   import type { TimelineAsset } from '#lib/managers/timeline-manager/types.ts';
   import PersonEditModal from '#lib/modals/PersonEditModal.svelte';
   import PersonMergeSuggestionModal from '#lib/modals/PersonMergeSuggestionModal.svelte';
+  import SharedLinkCreateModal from '#lib/modals/SharedLinkCreateModal.svelte';
   import { queryClient } from '#lib/queries/client.ts';
   import { searchPersonQuery } from '#lib/queries/search.query.ts';
   import { Route } from '#lib/route.ts';
@@ -36,7 +37,7 @@
   import { getPeopleThumbnailUrl } from '#lib/utils.ts';
   import { handleError } from '#lib/utils/handle-error.ts';
   import { normalizeSearchString } from '#lib/utils/string-utils.ts';
-  import { AssetVisibility, updatePerson, type PersonResponseDto } from '@immich/sdk';
+  import { AssetVisibility, searchAssets, updatePerson, type PersonResponseDto } from '@immich/sdk';
   import {
     ActionButton,
     CommandPaletteDefaultProvider,
@@ -53,6 +54,7 @@
     mdiArrowLeft,
     mdiDotsVertical,
     mdiPencilOutline,
+    mdiShareVariantOutline,
   } from '@mdi/js';
   import { DateTime } from 'luxon';
   import { onMount } from 'svelte';
@@ -316,6 +318,47 @@
   };
 
   const { Edit, Favorite, Unfavorite, HidePerson, ShowPerson, Access } = $derived(getPersonActions($t, person));
+
+  const SharePerson: ActionItem = {
+    title: 'Share Photos',
+    icon: mdiShareVariantOutline,
+    onAction: async () => {
+      if (assetMultiSelectManager.selectedAssets.size > 0) {
+        const assetIds = assetMultiSelectManager.assets.map((a) => a.id);
+        modalManager.show(SharedLinkCreateModal, { assetIds });
+        return;
+      }
+
+      let assetIds: string[] = [];
+      try {
+        let currentPage = 1;
+        let hasMore = true;
+        while (hasMore && assetIds.length < 5000) {
+          const { assets } = await searchAssets({
+            metadataSearchDto: {
+              personIds: [person.id],
+              page: currentPage,
+              size: 1000,
+              visibility: AssetVisibility.Timeline,
+            },
+          });
+          assetIds.push(...assets.items.map((a) => a.id));
+          hasMore = !!assets.nextPage && assets.items.length === 1000;
+          currentPage++;
+        }
+      } catch {
+        assetIds = timelineManager?.months?.flatMap((m) => m.days.flatMap((d) => d.getAssets())).map((a) => a.id) ?? [];
+      }
+
+      if (assetIds.length === 0) {
+        toastManager.show({ message: $t('no_assets_to_show'), type: 'warning' });
+        return;
+      }
+
+      modalManager.show(SharedLinkCreateModal, { assetIds });
+    },
+  };
+
   const SelectFeaturePhoto: ActionItem = {
     title: $t('select_featured_photo'),
     icon: mdiAccountBoxOutline,
@@ -345,7 +388,9 @@
 />
 <CommandPaletteDefaultProvider
   name={$t('person')}
-  actions={personActionsEnabled ? [SelectFeaturePhoto, Edit, HidePerson, ShowPerson, Merge, Favorite, Unfavorite] : []}
+  actions={personActionsEnabled
+    ? [SharePerson, SelectFeaturePhoto, Edit, HidePerson, ShowPerson, Merge, Favorite, Unfavorite]
+    : []}
 />
 
 <main
@@ -528,9 +573,10 @@
     {#if viewMode === PersonPageViewMode.VIEW_ASSETS}
       <ControlAppBar backIcon={mdiArrowLeft} onClose={() => goto(previousRoute)}>
         {#snippet trailing()}
+          <ActionButton action={SharePerson} />
           <ActionButton action={Access} />
           <ContextMenuButton
-            items={[SelectFeaturePhoto, Edit, HidePerson, ShowPerson, Merge, Favorite, Unfavorite]}
+            items={[SharePerson, SelectFeaturePhoto, Edit, HidePerson, ShowPerson, Merge, Favorite, Unfavorite]}
             aria-label={$t('open')}
           />
         {/snippet}

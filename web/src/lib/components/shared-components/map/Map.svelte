@@ -48,12 +48,15 @@
     ScaleControl,
   } from 'svelte-maplibre';
   import { afterNavigate } from '$app/navigation';
+  import ClusterMapMarker from './ClusterMapMarker.svelte';
+  import PhotoMapMarker from './PhotoMapMarker.svelte';
   import type { SelectionBBox } from './types';
 
   const query = createPreloadedQuery(getPublicConfigQuery);
   const publicConfig = $derived(query.data);
 
   interface Props {
+    map?: Map | undefined;
     mapMarkers?: MapMarkerResponseDto[];
     showSettings?: boolean;
     zoom?: number | undefined;
@@ -76,6 +79,7 @@
   }
 
   let {
+    map = $bindable(undefined),
     mapMarkers = $bindable(),
     showSettings = true,
     zoom = undefined,
@@ -97,7 +101,6 @@
     autoFitBounds = true,
   }: Props = $props();
 
-  // Calculate initial bounds from markers once during initialization
   const initialBounds = (() => {
     if (!autoFitBounds || center || zoom !== undefined || !mapMarkers || mapMarkers.length === 0) {
       return undefined;
@@ -110,7 +113,6 @@
     return bounds;
   })();
 
-  let map: Map | undefined = $state();
   let marker: Marker | null = null;
   let abortController: AbortController;
 
@@ -440,24 +442,22 @@
           features: mapMarkers?.map((marker) => asFeature(marker)) ?? [],
         }}
         id="geojson"
-        cluster={{ radius: 35, maxZoom: 18 }}
+        cluster={{ radius: 45, maxZoom: 18 }}
       >
         <MarkerLayer
           applyToClusters
           asButton
+          anchor="bottom"
           onclick={(event) => handlePromiseError(handleClusterClick(event.feature.properties?.cluster_id, map))}
         >
           {#snippet children({ feature })}
-            <div
-              class="flex size-10 items-center justify-center rounded-full bg-immich-primary font-mono font-bold text-white opacity-90 shadow-lg transition-all duration-200 hover:bg-immich-dark-primary hover:text-immich-dark-bg"
-            >
-              {feature.properties?.point_count?.toLocaleString()}
-            </div>
+            <ClusterMapMarker {feature} {map} />
           {/snippet}
         </MarkerLayer>
         <MarkerLayer
           applyToClusters={false}
           asButton
+          anchor="bottom"
           onclick={(event) => {
             if (!popup) {
               handleAssetClick(event.feature.properties?.id, map);
@@ -465,24 +465,7 @@
           }}
         >
           {#snippet children({ feature }: { feature: Feature })}
-            {#if useLocationPin}
-              <Icon icon={mdiMapMarker} size="50px" class="translate-y-[calc(5px-50%)] text-primary" />
-            {:else}
-              <img
-                src={getAssetMediaUrl({ id: feature.properties?.id })}
-                class="size-15 rounded-full border-2 border-immich-primary bg-immich-primary object-cover shadow-lg transition-all duration-200 hover:scale-150 hover:border-immich-dark-primary"
-                alt={feature.properties?.city && feature.properties.country
-                  ? $t('map_marker_for_image', {
-                      values: { city: feature.properties.city, country: feature.properties.country },
-                    })
-                  : $t('map_marker_with_image')}
-              />
-            {/if}
-            {#if popup}
-              <Popup offset={[0, -30]} openOn="click" closeOnClickOutside>
-                {@render popup({ marker: asMarker(feature) })}
-              </Popup>
-            {/if}
+            <PhotoMapMarker {feature} {useLocationPin} {popup} {asMarker} />
           {/snippet}
         </MarkerLayer>
       </GeoJSON>

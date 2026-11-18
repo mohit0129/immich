@@ -89,6 +89,15 @@ export const fileUploadHandler = async ({
   albumId,
   isLockedAssets = false,
 }: FileUploadHandlerParams): Promise<string[]> => {
+  if (
+    authManager.user?.quotaSizeInBytes !== null &&
+    authManager.user?.quotaSizeInBytes !== undefined &&
+    (authManager.user.quotaUsageInBytes ?? 0) >= authManager.user.quotaSizeInBytes
+  ) {
+    toastManager.danger('Storage quota exceeded! Cannot add more photos.');
+    return [];
+  }
+
   const extensions = uploadManager.getExtensions();
   const promises = [];
   for (const file of files) {
@@ -243,10 +252,22 @@ async function fileUploader({
 
     return responseData.id;
   } catch (error) {
-    // If the user store no longer holds a user, it means they have logged out
-    // In this case don't bother reporting any errors.
     if (wasInitiallyLoggedIn && !authManager.authenticated) {
       return;
+    }
+
+    const errorString = String(error);
+    const isQuotaError =
+      errorString.includes('Quota has been exceeded') ||
+      (typeof error === 'object' &&
+        error !== null &&
+        'statusCode' in error &&
+        (error as { statusCode?: number }).statusCode === 400 &&
+        errorString.toLowerCase().includes('quota'));
+
+    if (isQuotaError) {
+      uploadExecutionQueue.clear();
+      toastManager.danger('Storage quota exceeded! Photo uploads stopped.');
     }
 
     const errorMessage = handleError(error, $t('errors.unable_to_upload_file'));

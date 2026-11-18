@@ -12,6 +12,9 @@ import {
   UserAdminResponseDto,
   UserAdminSearchDto,
   UserAdminUpdateDto,
+  UserQuotaUpdateDto,
+  UserStatusUpdateDto,
+  UserTierUpdateDto,
 } from 'src/dtos/user.dto.js';
 import { ApiTag, Permission } from 'src/enum.js';
 import { Auth, Authenticated } from 'src/middleware/auth.guard.js';
@@ -80,6 +83,37 @@ export class UserAdminController {
     @Body() dto: UserAdminUpdateDto,
   ): Promise<UserAdminResponseDto> {
     return this.service.update(auth, id, dto);
+  }
+
+  @Patch(':id/quota')
+  @Put(':id/quota')
+  @Authenticated({ permission: Permission.AdminUserUpdate, admin: true })
+  updateUserQuota(
+    @Auth() auth: AuthDto,
+    @Param() { id }: UUIDParamDto,
+    @Body() dto: UserQuotaUpdateDto,
+  ): Promise<UserAdminResponseDto> {
+    return this.service.updateQuota(auth, id, dto);
+  }
+
+  @Post(':id/tier')
+  @Authenticated({ permission: Permission.AdminUserUpdate, admin: true })
+  updateUserTier(
+    @Auth() auth: AuthDto,
+    @Param() { id }: UUIDParamDto,
+    @Body() dto: UserTierUpdateDto,
+  ): Promise<UserAdminResponseDto> {
+    return this.service.updateTier(auth, id, dto);
+  }
+
+  @Patch(':id/status')
+  @Authenticated({ permission: Permission.AdminUserUpdate, admin: true })
+  updateUserStatus(
+    @Auth() auth: AuthDto,
+    @Param() { id }: UUIDParamDto,
+    @Body() dto: UserStatusUpdateDto,
+  ): Promise<UserAdminResponseDto> {
+    return this.service.updateStatus(auth, id, dto);
   }
 
   @Delete(':id')

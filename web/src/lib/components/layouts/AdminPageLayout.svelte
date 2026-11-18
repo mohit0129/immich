@@ -8,7 +8,15 @@
   import type { HeaderButtonActionItem } from '#lib/types.ts';
   import { ImmichBackupsAdminNavButton } from '@futo-org/backups-orchestrator-ui';
   import { AppShell, AppShellHeader, AppShellSidebar, MenuItemType, NavbarItem, type BreadcrumbItem } from '@immich/ui';
-  import { mdiAccountMultipleOutline, mdiBookshelf, mdiCog, mdiServer, mdiTrayFull, mdiWrench } from '@mdi/js';
+  import {
+    mdiAccountMultipleOutline,
+    mdiBellOutline,
+    mdiBookshelf,
+    mdiCog,
+    mdiServer,
+    mdiTrayFull,
+    mdiWrench,
+  } from '@mdi/js';
   import type { Snippet } from 'svelte';
   import { t } from 'svelte-i18n';
 
@@ -23,7 +31,7 @@
 
 <AppShell>
   <AppShellHeader>
-    <NavigationBar noBorder />
+    <NavigationBar noBorder showSearch={false} />
   </AppShellHeader>
   <AppShellSidebar
     bind:open={sidebarStore.isOpen}
@@ -35,6 +43,7 @@
       {/if}
 
       <NavbarItem title={$t('users')} href={Route.users()} icon={mdiAccountMultipleOutline} />
+      <NavbarItem title={$t('notifications')} href={Route.adminNotifications()} icon={mdiBellOutline} />
       <NavbarItem title={$t('external_libraries')} href={Route.libraries()} icon={mdiBookshelf} />
       <NavbarItem title={$t('admin.queues')} href={Route.queues()} icon={mdiTrayFull} />
       <NavbarItem title={$t('settings')} href={Route.systemSettings()} icon={mdiCog} />

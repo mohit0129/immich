@@ -27,7 +27,9 @@
   import { AssetMediaSize, AssetTypeEnum, MemoryType, getAssetInfo } from '@immich/sdk';
   import { ActionButton, CommandPaletteDefaultProvider, Icon, IconButton, Text } from '@immich/ui';
   import {
+    mdiAccountGroup,
     mdiCakeVariant,
+    mdiCalendarSync,
     mdiCardsOutline,
     mdiChevronDown,
     mdiChevronLeft,
@@ -35,10 +37,14 @@
     mdiChevronUp,
     mdiClose,
     mdiDotsVertical,
+    mdiFilmstrip,
     mdiHeart,
     mdiHeartOutline,
     mdiImageMinusOutline,
     mdiImageSearch,
+    mdiMapMarker,
+    mdiPalette,
+    mdiPartyPopper,
     mdiPause,
     mdiPlay,
     mdiSelectAll,
@@ -348,6 +354,18 @@
           <p class="flex items-center gap-2 text-lg">
             {#if current.memory.type === MemoryType.Birthday}
               <Icon icon={mdiCakeVariant} size="1.25em" />
+            {:else if current.memory.type === MemoryType.TripEvent}
+              <Icon icon={mdiMapMarker} size="1.25em" />
+            {:else if current.memory.type === MemoryType.ThisWeekLastYear}
+              <Icon icon={mdiCalendarSync} size="1.25em" />
+            {:else if current.memory.type === MemoryType.HolidayCelebration || current.memory.type === MemoryType.MilestoneAnniversary}
+              <Icon icon={mdiPartyPopper} size="1.25em" />
+            {:else if current.memory.type === MemoryType.Collaborative}
+              <Icon icon={mdiAccountGroup} size="1.25em" />
+            {:else if current.memory.type === MemoryType.VisualPattern}
+              <Icon icon={mdiPalette} size="1.25em" />
+            {:else if current.memory.type === MemoryType.CinematicMoments || current.memory.type === MemoryType.RemixCollage}
+              <Icon icon={mdiFilmstrip} size="1.25em" />
             {/if}
             {$memoryLaneTitle(current.memory)}
           </p>

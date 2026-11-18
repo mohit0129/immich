@@ -27,8 +27,8 @@ export abstract class VirtualScrollManager {
   #resetScrolling = debounce(() => (this.#scrolling = false), 1000);
   #resetSuspendTransitions = debounce(() => (this.suspendTransitions = false), 1000);
   #justifiedLayoutOptions = $derived({
-    spacing: 2,
-    heightTolerance: 0.5,
+    spacing: this.#gap,
+    heightTolerance: 0.25,
     rowHeight: this.#rowHeight,
     rowWidth: Math.floor(this.viewportWidth),
   });

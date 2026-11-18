@@ -23,17 +23,26 @@
   let password = $state('');
   let slug = $state('');
   let expiresAt = $state<string | null>(null);
+  let requiresApproval = $state(false);
 
   let type = $derived(albumId ? SharedLinkType.Album : SharedLinkType.Individual);
 
   const onSubmit = async () => {
+    if (type === SharedLinkType.Individual && (!assetIds || assetIds.length === 0)) {
+      return;
+    }
+
+    const finalDescription = requiresApproval
+      ? (description ? `${description} [APPROVAL_REQUIRED]` : '[APPROVAL_REQUIRED]')
+      : description;
+
     const sharedLinkCreateDto = {
       type,
       albumId,
       assetIds,
       expiresAt,
       allowUpload,
-      description,
+      description: finalDescription,
       password,
       allowDownload,
       showMetadata,
@@ -72,5 +81,6 @@
     bind:allowUpload
     bind:showMetadata
     bind:expiresAt
+    bind:requiresApproval
   />
 </FormModal>

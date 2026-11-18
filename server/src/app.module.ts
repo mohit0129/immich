@@ -100,6 +100,7 @@ export class BaseModule implements OnModuleInit, OnModuleDestroy {
     this.websocketRepository.setAuthFn(async (client) =>
       this.authService.authenticate({
         headers: client.request.headers,
+        clientIp: client.handshake.address,
         queryParams: {},
         metadata: { adminRoute: false, sharedLinkRoute: false, uri: '/api/socket.io' },
       }),

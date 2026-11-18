@@ -21,15 +21,36 @@
 
   const user = $derived(queries.user.data);
   const serverInfo = $derived(queries.storage.data);
-  let { isAdmin, name, email } = $derived(user);
-  let storageLabel = $derived(user.storageLabel || '');
-  const previousQuota = $derived(user.quotaSizeInBytes);
 
-  let quotaSize = $derived(
-    typeof user.quotaSizeInBytes === 'number' ? convertFromBytes(user.quotaSizeInBytes, ByteUnit.GiB) : undefined,
+  let email = $state(queries.user.data?.email ?? '');
+  let name = $state(queries.user.data?.name ?? '');
+  let isAdmin = $state(queries.user.data?.isAdmin ?? false);
+  let storageLabel = $state(queries.user.data?.storageLabel ?? '');
+  let quotaSize: number | undefined = $state(
+    typeof queries.user.data?.quotaSizeInBytes === 'number'
+      ? convertFromBytes(queries.user.data.quotaSizeInBytes, ByteUnit.GiB)
+      : undefined,
   );
 
-  const quotaSizeBytes = $derived(typeof quotaSize === 'number' ? convertToBytes(quotaSize, ByteUnit.GiB) : null);
+  let isInitialized = false;
+  $effect(() => {
+    if (user && !isInitialized) {
+      email = user.email;
+      name = user.name;
+      isAdmin = user.isAdmin;
+      storageLabel = user.storageLabel ?? '';
+      quotaSize =
+        typeof user.quotaSizeInBytes === 'number'
+          ? convertFromBytes(user.quotaSizeInBytes, ByteUnit.GiB)
+          : undefined;
+      isInitialized = true;
+    }
+  });
+
+  const previousQuota = $derived(user?.quotaSizeInBytes);
+  const quotaSizeBytes = $derived(
+    typeof quotaSize === 'number' && !isNaN(quotaSize) ? convertToBytes(quotaSize, ByteUnit.GiB) : null,
+  );
 
   let quotaSizeWarning = $derived(
     previousQuota !== quotaSizeBytes && !!quotaSizeBytes && serverInfo && quotaSizeBytes > serverInfo.diskSizeRaw,

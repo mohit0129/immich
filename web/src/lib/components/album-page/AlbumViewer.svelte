@@ -7,6 +7,7 @@
   import SelectAllAssets from '#lib/components/timeline/actions/SelectAllAction.svelte';
   import { assetMultiSelectManager } from '#lib/managers/asset-multi-select-manager.svelte.ts';
   import { assetViewerManager } from '#lib/managers/asset-viewer-manager.svelte.ts';
+  import { authManager } from '#lib/managers/auth-manager.svelte.ts';
   import { TimelineManager } from '#lib/managers/timeline-manager/timeline-manager.svelte.ts';
   import { createPreloadedQuery } from '#lib/queries/client.ts';
   import { getPublicConfigQuery } from '#lib/queries/config-public.query.ts';
@@ -21,6 +22,7 @@
   import { ActionButton, IconButton, Logo } from '@immich/ui';
   import { mdiDownload, mdiFileImagePlusOutline, mdiPresentationPlay } from '@mdi/js';
   import { t } from 'svelte-i18n';
+  import { onMount } from 'svelte';
   import ControlAppBar from '../shared-components/ControlAppBar.svelte';
   import ThemeButton from '../shared-components/ThemeButton.svelte';
   import AlbumSummary from './AlbumSummary.svelte';
@@ -35,6 +37,44 @@
   let { sharedLink }: Props = $props();
 
   const album = sharedLink.album as AlbumResponseDto;
+
+  let isSender = $derived(authManager.authenticated && authManager.user.id === sharedLink?.userId);
+  let recipientNames = $derived.by(() => {
+    if (album.sharedUsers && album.sharedUsers.length > 0) {
+      return album.sharedUsers.map((u) => u.name || u.email).join(', ');
+    }
+    return '';
+  });
+
+  let displayAlbumTitle = $derived.by(() => {
+    if (isSender) {
+      return recipientNames ? `${album.albumName} shared to ${recipientNames}` : album.albumName;
+    }
+    const myName = authManager.authenticated ? authManager.user.name : '';
+    if (myName) {
+      return `${album.albumName} shared to ${myName}`;
+    }
+    const senderName = album.owner?.name;
+    return senderName ? `${album.albumName} shared by ${senderName}` : album.albumName;
+  });
+
+  let cleanDescription = $derived(
+    album.description ? album.description.replace(/\[PARENT:[^\]]+\]/g, '').trim() : '',
+  );
+
+  onMount(async () => {
+    if (authManager.authenticated && authManager.user.id !== sharedLink?.userId && album.id) {
+      try {
+        await fetch('/api/shared-links/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ albumId: album.id, userId: authManager.user.id }),
+        });
+      } catch {
+        // ignore
+      }
+    }
+  });
 
   let { slideshowState, slideshowNavigation } = slideshowStore;
 
@@ -81,7 +121,7 @@
     <section class="px-2 pt-8 md:px-0 md:pt-24">
       <!-- ALBUM TITLE -->
       <h1 class="text-2xl text-primary transition-all outline-none md:text-4xl lg:text-6xl">
-        {album.albumName}
+        {displayAlbumTitle}
       </h1>
 
       {#if album.assetCount > 0}
@@ -89,11 +129,11 @@
       {/if}
 
       <!-- ALBUM DESCRIPTION -->
-      {#if album.description}
+      {#if cleanDescription}
         <p
           class="mt-6 mb-12 w-full pb-2 text-start text-base font-medium whitespace-pre-line text-black dark:text-gray-300"
         >
-          {album.description}
+          {cleanDescription}
         </p>
       {/if}
     </section>

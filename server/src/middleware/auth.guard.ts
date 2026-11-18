@@ -67,7 +67,7 @@ export const FileResponse = () =>
 
 export const GetLoginDetails = createParamDecorator((data, context: ExecutionContext): LoginDetails => {
   const request = context.switchToHttp().getRequest<Request>();
-  const { deviceType, deviceOS, appVersion } = getUserAgentDetails(request.headers);
+  const { deviceType, deviceOS, appVersion } = getUserAgentDetails(request.headers, request.ip);
 
   return {
     clientIp: request.ip ?? '',
@@ -115,6 +115,7 @@ export class AuthGuard implements CanActivate {
 
     request.user = await this.authService.authenticate({
       headers: request.headers,
+      clientIp: request.ip,
       queryParams: request.query as Record<string, string>,
       metadata: { adminRoute, sharedLinkRoute, permission, uri: request.path },
     });

@@ -15,6 +15,8 @@
     mdiAccountOutline,
     mdiArchiveArrowDown,
     mdiArchiveArrowDownOutline,
+    mdiBell,
+    mdiBellOutline,
     mdiCards,
     mdiCardsOutline,
     mdiFolderOutline,
@@ -48,13 +50,9 @@
 
   <NavbarItem title={$t('explore')} href={Route.explore()} icon={mdiMagnify} />
 
-  {#if config.map.enabled}
-    <NavbarItem title={$t('map')} href={Route.map()} icon={mdiMapOutline} activeIcon={mdiMap} />
-  {/if}
+  <NavbarItem title={$t('map')} href={Route.map()} icon={mdiMapOutline} activeIcon={mdiMap} />
 
-  {#if authManager.preferences.memories.enabled && authManager.preferences.memories.sidebarWeb}
-    <NavbarItem title={$t('memories')} href={Route.memories()} icon={mdiCardsOutline} activeIcon={mdiCards} />
-  {/if}
+  <NavbarItem title={$t('memories')} href={Route.memories()} icon={mdiCardsOutline} activeIcon={mdiCards} />
 
   {#if authManager.preferences.people.enabled && authManager.preferences.people.sidebarWeb}
     <NavbarItem title={$t('people')} href={Route.people()} icon={mdiAccountOutline} activeIcon={mdiAccount} />
@@ -69,6 +67,13 @@
     href={Route.sharing()}
     icon={mdiAccountMultipleOutline}
     activeIcon={mdiAccountMultiple}
+  />
+
+  <NavbarItem
+    title={$t('notifications')}
+    href={Route.notifications()}
+    icon={mdiBellOutline}
+    activeIcon={mdiBell}
   />
 
   <NavbarGroup title={$t('library')} size="tiny" />

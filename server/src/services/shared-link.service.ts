@@ -12,7 +12,7 @@ import {
   SharedLinkSearchDto,
   mapSharedLink,
 } from 'src/dtos/shared-link.dto.js';
-import { Permission, SharedLinkType } from 'src/enum.js';
+import { AlbumUserRole, Permission, SharedLinkType } from 'src/enum.js';
 import { BaseService } from 'src/services/base.service.js';
 import { asDateTimeString } from 'src/utils/date.js';
 import { OpenGraphTags, findOrFail, getExternalDomain } from 'src/utils/misc.js';
@@ -233,6 +233,20 @@ export class SharedLinkService extends BaseService {
       description: sharedLink.description || `${assetCount} shared photos & videos`,
       imageUrl: new URL(imagePath, getExternalDomain(config.server, defaultDomain)).href,
     };
+  }
+
+  async joinSharedLink(auth: AuthDto, albumId: string, userId: string): Promise<void> {
+    if (!albumId || !userId) {
+      return;
+    }
+    try {
+      await this.albumUserRepository.create({
+        albumId,
+        userId,
+        role: AlbumUserRole.Viewer,
+      });
+    } catch {
+    }
   }
 
   private async mapWithAlbumMetadata(sharedLink: SharedLink, { auth }: { auth: AuthDto }) {

@@ -23,10 +23,27 @@ const MemorySearchSchema = z
 
 const MemoryDataSchema = z
   .object({
-    year: z.int().min(1000).max(9999).describe('Year of the memory'),
+    year: z.int().min(1000).max(9999).optional().describe('Year of the memory'),
     personId: z.uuidv4().optional().describe('Person ID (birthday memories)'),
     personName: z.string().optional().describe('Name of the person when the memory was created (birthday memories)'),
+    title: z.string().optional().describe('Custom title of the memory'),
+    subtitle: z.string().optional().describe('Custom subtitle of the memory'),
+    season: z.string().optional().describe('Season name'),
+    period: z.string().optional().describe('Period label'),
+    yearsAgo: z.number().int().optional().describe('Years elapsed'),
+    yearsSpan: z.number().int().optional().describe('Years span for growth memories'),
+    locationName: z.string().optional().describe('Location name for trip memories'),
+    city: z.string().optional().describe('City for trip memories'),
+    country: z.string().optional().describe('Country for trip memories'),
+    patternType: z.string().optional().describe('Visual pattern type or theme'),
+    holidayName: z.string().optional().describe('Holiday name'),
+    style: z.string().optional().describe('Remix or collage style'),
+    effect: z.string().optional().describe('Stylized effect'),
+    effectType: z.string().optional().describe('Cinematic effect type'),
+    albumId: z.uuidv4().optional().describe('Album ID for collaborative memories'),
+    albumName: z.string().optional().describe('Album name for collaborative memories'),
   })
+  .passthrough()
   .meta({ id: 'MemoryDataDto' });
 
 type MemoryData = z.infer<typeof MemoryDataSchema>;
@@ -55,8 +72,15 @@ const MemoryCreateBaseSchema = z.object({
 });
 
 const MemoryCreateSchema = MemoryCreateBaseSchema.superRefine((dto, ctx) => {
+  if (dto.type === MemoryType.OnThisDay && dto.data.year === undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['data', 'year'],
+      message: `Required for ${MemoryType.OnThisDay} memories`,
+    });
+  }
   if (dto.type === MemoryType.Birthday) {
-    for (const key of ['personId', 'personName'] as const) {
+    for (const key of ['personId', 'personName', 'year'] as const) {
       if (dto.data[key] === undefined) {
         ctx.addIssue({
           code: 'custom',

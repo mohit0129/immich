@@ -23,7 +23,7 @@ import {
 } from 'src/dtos/auth.dto.js';
 import { SystemConfig, defaults } from 'src/dtos/config.dto.js';
 import { UserAdminResponseDto, mapUserAdmin } from 'src/dtos/user.dto.js';
-import { AuthType, ImmichCookie, ImmichHeader, ImmichQuery, JobName, Permission } from 'src/enum.js';
+import { AuthType, ImmichCookie, ImmichHeader, ImmichQuery, JobName, Permission, UserStatus } from 'src/enum.js';
 import { OAuthConfig, OAuthRawProfile } from 'src/repositories/oauth.repository.js';
 import { BaseService } from 'src/services/base.service.js';
 import { isGranted } from 'src/utils/access.js';
@@ -45,6 +45,7 @@ type OAuthClaimsConfig = Pick<
 
 export type ValidateRequest = {
   headers: IncomingHttpHeaders;
+  clientIp?: string;
   queryParams: Record<string, string>;
   metadata: {
     sharedLinkRoute: boolean;
@@ -71,6 +72,10 @@ export class AuthService extends BaseService {
     if (!user || !user.password || !isAuthenticated) {
       this.logger.warn(`Failed login attempt for user ${dto.email} from ip address ${details.clientIp}`);
       throw new UnauthorizedException('Incorrect email or password');
+    }
+
+    if (user.status === UserStatus.Suspended) {
+      throw new ForbiddenException('User account has been suspended');
     }
 
     return this.createLoginResponse(user, details);
@@ -212,10 +217,14 @@ export class AuthService extends BaseService {
     return mapUserAdmin(admin);
   }
 
-  async authenticate({ headers, queryParams, metadata }: ValidateRequest): Promise<AuthDto> {
-    const authDto = await this.validate({ headers, queryParams });
+  async authenticate({ headers, clientIp, queryParams, metadata }: ValidateRequest): Promise<AuthDto> {
+    const authDto = await this.validate({ headers, clientIp, queryParams });
     const { adminRoute, sharedLinkRoute, uri } = metadata;
     const requestedPermission = metadata.permission ?? Permission.All;
+
+    if (authDto.user.status === UserStatus.Suspended) {
+      throw new ForbiddenException('User account has been suspended');
+    }
 
     if (!authDto.user.isAdmin && adminRoute) {
       this.logger.warn(`Denied access to admin only route: ${uri}`);
@@ -238,7 +247,7 @@ export class AuthService extends BaseService {
     return authDto;
   }
 
-  private async validate({ headers, queryParams }: Omit<ValidateRequest, 'metadata'>): Promise<AuthDto> {
+  private async validate({ headers, clientIp, queryParams }: Omit<ValidateRequest, 'metadata'>): Promise<AuthDto> {
     const shareKey = (headers[ImmichHeader.SharedLinkKey] || queryParams[ImmichQuery.SharedLinkKey]) as string;
     const shareSlug = (headers[ImmichHeader.SharedLinkSlug] || queryParams[ImmichQuery.SharedLinkSlug]) as string;
     const session = (headers[ImmichHeader.UserToken] ||
@@ -257,7 +266,7 @@ export class AuthService extends BaseService {
     }
 
     if (session) {
-      return this.validateSession(session, headers);
+      return this.validateSession(session, headers, clientIp);
     }
 
     if (apiKey) {
@@ -550,15 +559,20 @@ export class AuthService extends BaseService {
     return this.cryptoRepository.compareBcrypt(inputSecret, existingHash);
   }
 
-  private async validateSession(token: string, headers: IncomingHttpHeaders): Promise<AuthDto> {
+  private async validateSession(token: string, headers: IncomingHttpHeaders, clientIp?: string): Promise<AuthDto> {
     const hashed = this.cryptoRepository.hashSha256(token);
     const session = await this.sessionRepository.getByToken(hashed);
     if (session?.user) {
-      const { appVersion, deviceOS, deviceType } = getUserAgentDetails(headers);
+      const { appVersion, deviceOS, deviceType } = getUserAgentDetails(headers, clientIp);
       const now = DateTime.now();
       const updatedAt = DateTime.fromJSDate(session.updatedAt);
-      const diff = now.diff(updatedAt, ['hours']);
-      if (diff.hours > 1 || appVersion !== session.appVersion) {
+      const diffMinutes = now.diff(updatedAt).as('minutes');
+      if (
+        diffMinutes >= 1 ||
+        appVersion !== session.appVersion ||
+        deviceOS !== session.deviceOS ||
+        deviceType !== session.deviceType
+      ) {
         await this.sessionRepository.update(session.id, {
           id: session.id,
           updatedAt: new Date(),

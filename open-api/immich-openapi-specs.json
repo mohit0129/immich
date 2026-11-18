@@ -1181,6 +1181,95 @@
       }
     },
     "/admin/notifications": {
+      "get": {
+        "description": "Retrieve all notifications across all users.",
+        "operationId": "getNotificationsAdmin",
+        "parameters": [
+          {
+            "name": "id",
+            "required": false,
+            "in": "query",
+            "description": "Filter by notification ID",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "level",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/NotificationLevel"
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/NotificationType"
+            }
+          },
+          {
+            "name": "unread",
+            "required": false,
+            "in": "query",
+            "description": "Filter by unread status",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Retrieve all notifications",
+        "tags": [
+          "Notifications (admin)"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          },
+          {
+            "version": "v1",
+            "state": "Beta"
+          },
+          {
+            "version": "v2",
+            "state": "Stable"
+          }
+        ],
+        "x-immich-permission": "notification.read",
+        "x-immich-state": "Stable"
+      },
       "post": {
         "description": "Create a new notification for a specific user.",
         "operationId": "createNotification",
@@ -1369,6 +1458,61 @@
           }
         ],
         "x-immich-permission": "notification.create",
+        "x-immich-state": "Stable"
+      }
+    },
+    "/admin/notifications/{id}": {
+      "delete": {
+        "description": "Delete any notification by ID.",
+        "operationId": "deleteNotificationAdmin",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Delete notification as admin",
+        "tags": [
+          "Notifications (admin)"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          },
+          {
+            "version": "v1",
+            "state": "Beta"
+          },
+          {
+            "version": "v2",
+            "state": "Stable"
+          }
+        ],
+        "x-immich-permission": "notification.delete",
         "x-immich-state": "Stable"
       }
     },
@@ -14446,6 +14590,65 @@
         "x-immich-state": "Stable"
       }
     },
+    "/shared-links/join": {
+      "post": {
+        "description": "Add current user to shared album automatically upon opening link",
+        "operationId": "joinSharedLink",
+        "parameters": [
+          {
+            "name": "key",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Join shared album",
+        "tags": [
+          "Shared links"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v2",
+            "state": "Added"
+          },
+          {
+            "version": "v2",
+            "state": "Beta"
+          },
+          {
+            "version": "v2",
+            "state": "Stable"
+          }
+        ],
+        "x-immich-state": "Stable"
+      }
+    },
     "/shared-links/login": {
       "post": {
         "description": "Login to a password protected shared link",
@@ -23816,7 +24019,50 @@
         "type": "object"
       },
       "MemoryDataDto": {
+        "additionalProperties": {},
         "properties": {
+          "albumId": {
+            "description": "Album ID for collaborative memories",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
+          },
+          "albumName": {
+            "description": "Album name for collaborative memories",
+            "type": "string"
+          },
+          "city": {
+            "description": "City for trip memories",
+            "type": "string"
+          },
+          "country": {
+            "description": "Country for trip memories",
+            "type": "string"
+          },
+          "effect": {
+            "description": "Stylized effect",
+            "type": "string"
+          },
+          "effectType": {
+            "description": "Cinematic effect type",
+            "type": "string"
+          },
+          "holidayName": {
+            "description": "Holiday name",
+            "type": "string"
+          },
+          "locationName": {
+            "description": "Location name for trip memories",
+            "type": "string"
+          },
+          "patternType": {
+            "description": "Visual pattern type or theme",
+            "type": "string"
+          },
+          "period": {
+            "description": "Period label",
+            "type": "string"
+          },
           "personId": {
             "description": "Person ID (birthday memories)",
             "format": "uuid",
@@ -23827,16 +24073,41 @@
             "description": "Name of the person when the memory was created (birthday memories)",
             "type": "string"
           },
+          "season": {
+            "description": "Season name",
+            "type": "string"
+          },
+          "style": {
+            "description": "Remix or collage style",
+            "type": "string"
+          },
+          "subtitle": {
+            "description": "Custom subtitle of the memory",
+            "type": "string"
+          },
+          "title": {
+            "description": "Custom title of the memory",
+            "type": "string"
+          },
           "year": {
             "description": "Year of the memory",
             "maximum": 9999,
             "minimum": 1000,
             "type": "integer"
+          },
+          "yearsAgo": {
+            "description": "Years elapsed",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "yearsSpan": {
+            "description": "Years span for growth memories",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
           }
         },
-        "required": [
-          "year"
-        ],
         "type": "object"
       },
       "MemoryResponseDto": {
@@ -23959,7 +24230,19 @@
         "description": "Memory type",
         "enum": [
           "on_this_day",
-          "birthday"
+          "birthday",
+          "this_week_last_year",
+          "recent_highlights",
+          "season_summary",
+          "milestone_anniversary",
+          "people_pet_growth",
+          "trip_event",
+          "visual_pattern",
+          "holiday_celebration",
+          "remix_collage",
+          "stylized_photo",
+          "cinematic_moments",
+          "collaborative"
         ],
         "type": "string"
       },
@@ -24907,6 +25190,10 @@
       },
       "NotificationCreateDto": {
         "properties": {
+          "allUsers": {
+            "description": "Send notification to all users",
+            "type": "boolean"
+          },
           "data": {
             "additionalProperties": {},
             "description": "Additional notification data",
@@ -24940,11 +25227,19 @@
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
             "type": "string"
+          },
+          "userIds": {
+            "description": "User IDs to send notification to",
+            "items": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            },
+            "type": "array"
           }
         },
         "required": [
-          "title",
-          "userId"
+          "title"
         ],
         "type": "object"
       },
@@ -26250,7 +26545,7 @@
         "properties": {
           "newPinCode": {
             "description": "New PIN code (4-6 digits)",
-            "pattern": "^\\d{6}$",
+            "pattern": "^(?:\\d{4}|\\d{6})$",
             "type": "string"
           },
           "password": {
@@ -26261,7 +26556,7 @@
           "pinCode": {
             "description": "New PIN code (4-6 digits)",
             "example": "123456",
-            "pattern": "^\\d{6}$",
+            "pattern": "^(?:\\d{4}|\\d{6})$",
             "type": "string"
           }
         },
@@ -26280,7 +26575,7 @@
           "pinCode": {
             "description": "New PIN code (4-6 digits)",
             "example": "123456",
-            "pattern": "^\\d{6}$",
+            "pattern": "^(?:\\d{4}|\\d{6})$",
             "type": "string"
           }
         },
@@ -26291,7 +26586,7 @@
           "pinCode": {
             "description": "PIN code (4-6 digits)",
             "example": "123456",
-            "pattern": "^\\d{6}$",
+            "pattern": "^(?:\\d{4}|\\d{6})$",
             "type": "string"
           }
         },
@@ -28914,7 +29209,7 @@
           "pinCode": {
             "description": "New PIN code (4-6 digits)",
             "example": "123456",
-            "pattern": "^\\d{6}$",
+            "pattern": "^(?:\\d{4}|\\d{6})$",
             "type": "string"
           }
         },
@@ -33491,7 +33786,7 @@
             "description": "PIN code",
             "example": "123456",
             "nullable": true,
-            "pattern": "^\\d{6}$",
+            "pattern": "^(?:\\d{4}|\\d{6})$",
             "type": "string"
           },
           "quotaSizeInBytes": {
@@ -33688,7 +33983,7 @@
             "description": "PIN code",
             "example": "123456",
             "nullable": true,
-            "pattern": "^\\d{6}$",
+            "pattern": "^(?:\\d{4}|\\d{6})$",
             "type": "string"
           },
           "quotaSizeInBytes": {
@@ -33701,6 +33996,9 @@
           "shouldChangePassword": {
             "description": "Require password change on next login",
             "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/UserStatus"
           },
           "storageLabel": {
             "description": "Storage label",
@@ -34294,7 +34592,8 @@
         "enum": [
           "active",
           "removing",
-          "deleted"
+          "deleted",
+          "suspended"
         ],
         "type": "string"
       },

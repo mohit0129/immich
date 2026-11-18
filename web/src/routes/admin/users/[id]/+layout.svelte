@@ -7,6 +7,7 @@
   import UserAvatar from '#lib/components/shared-components/UserAvatar.svelte';
   import DeviceCard from '#lib/components/user-settings-page/DeviceCard.svelte';
   import Skeleton from '#lib/elements/Skeleton.svelte';
+  import AdjustQuotaModal from '#lib/modals/AdjustQuotaModal.svelte';
   import { createPreloadedQuery } from '#lib/queries/client.ts';
   import {
     getUserAdminQuery,
@@ -23,6 +24,7 @@
   import {
     Alert,
     Badge,
+    Button,
     CardTitle,
     Code,
     CommandPaletteDefaultProvider,
@@ -34,6 +36,7 @@
     Stack,
     Text,
     getByteUnitString,
+    modalManager,
   } from '@immich/ui';
   import {
     mdiAccountOutline,
@@ -84,7 +87,7 @@
     { from: 0.95, className: 'bg-danger' },
   ];
 
-  const { ResetPassword, ResetPinCode, Update, Delete, Restore } = $derived(getUserAdminActions($t, user));
+  const { ResetPassword, ResetPinCode, Update, AdjustQuota, Delete, Restore } = $derived(getUserAdminActions($t, user));
 
   const onUserAdminDeleted = async ({ id }: { id: string }) => {
     if (id === user.id) {
@@ -95,11 +98,11 @@
 
 <OnEvents {onUserAdminDeleted} />
 
-<CommandPaletteDefaultProvider name={$t('user')} actions={[ResetPassword, ResetPinCode, Update, Delete, Restore]} />
+<CommandPaletteDefaultProvider name={$t('user')} actions={[ResetPassword, ResetPinCode, Update, AdjustQuota, Delete, Restore]} />
 
 <AdminPageLayout
   breadcrumbs={[{ title: $t('admin.user_management'), href: Route.users() }, { title: user.name }]}
-  actions={[ResetPassword, ResetPinCode, Update, Restore, MenuItemType.Divider, Delete]}
+  actions={[ResetPassword, ResetPinCode, Update, AdjustQuota, Restore, MenuItemType.Divider, Delete]}
 >
   <div>
     <Container size="large" center>
@@ -190,6 +193,17 @@
               {$t('unlimited')}
             </Text>
           {/if}
+          <div class="mt-4 flex justify-end">
+            <Button
+              size="small"
+              color="primary"
+              variant="outline"
+              icon={mdiChartPieOutline}
+              onAction={() => modalManager.show(AdjustQuotaModal, { user })}
+            >
+              {$t('adjust_quota')}
+            </Button>
+          </div>
         </AdminCard>
 
         <AdminCard icon={mdiDevices} title={$t('authorized_devices')}>

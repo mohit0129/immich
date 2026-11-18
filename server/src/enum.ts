@@ -92,11 +92,20 @@ export enum AssetOrderBy {
 export const AssetOrderBySchema = z.enum(AssetOrderBy).describe('Asset sorting property').meta({ id: 'AssetOrderBy' });
 
 export enum MemoryType {
-  /** pictures taken on this day X years ago */
   OnThisDay = 'on_this_day',
-
-  /** pictures of a person, shown leading up to their birthday */
   Birthday = 'birthday',
+  ThisWeekLastYear = 'this_week_last_year',
+  RecentHighlights = 'recent_highlights',
+  SeasonSummary = 'season_summary',
+  MilestoneAnniversary = 'milestone_anniversary',
+  PeoplePetGrowth = 'people_pet_growth',
+  TripEvent = 'trip_event',
+  VisualPattern = 'visual_pattern',
+  HolidayCelebration = 'holiday_celebration',
+  RemixCollage = 'remix_collage',
+  StylizedPhoto = 'stylized_photo',
+  CinematicMoments = 'cinematic_moments',
+  Collaborative = 'collaborative',
 }
 
 export const MemoryTypeSchema = z.enum(MemoryType).describe('Memory type').meta({ id: 'MemoryType' });
@@ -441,6 +450,7 @@ export enum UserStatus {
   Active = 'active',
   Removing = 'removing',
   Deleted = 'deleted',
+  Suspended = 'suspended',
 }
 
 export const UserStatusSchema = z.enum(UserStatus).describe('User status').meta({ id: 'UserStatus' });

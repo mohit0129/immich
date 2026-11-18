@@ -24,18 +24,19 @@
 
   type Props = {
     onUploadClick?: () => void;
-    // TODO: remove once this is only used in <AppShellHeader>
     noBorder?: boolean;
+    showSearch?: boolean;
   };
 
-  let { onUploadClick, noBorder = false }: Props = $props();
+  let { onUploadClick, noBorder = false, showSearch = true }: Props = $props();
 
   let shouldShowAccountInfoPanel = $state(false);
   let shouldShowNotificationPanel = $state(false);
   let innerWidth: number = $state(0);
   const query = createQuery(getNotificationsQuery);
-  const unreadCount = $derived(query.data?.length ?? 0);
+  const unreadCount = $derived(query.data?.filter((n) => !n.readAt).length ?? 0);
   const hasUnreadNotifications = $derived(unreadCount > 0);
+  const isSearchVisible = $derived(showSearch && !page.url.pathname.includes('/admin'));
 
   const { Cast } = $derived(getGlobalActions($t));
 </script>
@@ -74,22 +75,28 @@
       </a>
     </div>
     <div class="flex justify-between gap-4 pe-6 lg:gap-8">
-      <div class="hidden w-full max-w-5xl flex-1 sm:block tall:ps-0">
-        <SearchBar grayTheme={true} />
-      </div>
+      {#if isSearchVisible}
+        <div class="hidden w-full max-w-5xl flex-1 sm:block tall:ps-0">
+          <SearchBar grayTheme={true} />
+        </div>
+      {:else}
+        <div class="flex-1"></div>
+      {/if}
 
       <section class="flex w-full place-items-center justify-end gap-1 sm:w-auto md:gap-2">
-        <IconButton
-          color="secondary"
-          shape="round"
-          variant="ghost"
-          size="medium"
-          icon={mdiMagnify}
-          href={Route.search()}
-          id="search-button"
-          class="sm:hidden"
-          aria-label={$t('go_to_search')}
-        />
+        {#if isSearchVisible}
+          <IconButton
+            color="secondary"
+            shape="round"
+            variant="ghost"
+            size="medium"
+            icon={mdiMagnify}
+            href={Route.search()}
+            id="search-button"
+            class="sm:hidden"
+            aria-label={$t('go_to_search')}
+          />
+        {/if}
 
         {#if !page.url.pathname.includes('/admin') && onUploadClick}
           <Button

@@ -514,22 +514,6 @@ export type MaintenanceStatusResponseDto = {
     progress?: number;
     task?: string;
 };
-export type NotificationCreateDto = {
-    /** Additional notification data */
-    data?: {
-        [key: string]: any;
-    };
-    /** Notification description */
-    description?: string | null;
-    level?: NotificationLevel;
-    /** Date when notification was read */
-    readAt?: string | null;
-    /** Notification title */
-    title: string;
-    "type"?: NotificationType;
-    /** User ID to send notification to */
-    userId: string;
-};
 export type NotificationDto = {
     /** Creation date */
     createdAt: string;
@@ -547,6 +531,26 @@ export type NotificationDto = {
     /** Notification title */
     title: string;
     "type": NotificationType;
+};
+export type NotificationCreateDto = {
+    /** Send notification to all users */
+    allUsers?: boolean;
+    /** Additional notification data */
+    data?: {
+        [key: string]: any;
+    };
+    /** Notification description */
+    description?: string | null;
+    level?: NotificationLevel;
+    /** Date when notification was read */
+    readAt?: string | null;
+    /** Notification title */
+    title: string;
+    "type"?: NotificationType;
+    /** User ID to send notification to */
+    userId?: string;
+    /** User IDs to send notification to */
+    userIds?: string[];
 };
 export type TemplateDto = {
     /** Template name */
@@ -646,6 +650,7 @@ export type UserAdminUpdateDto = {
     quotaSizeInBytes?: number | null;
     /** Require password change on next login */
     shouldChangePassword?: boolean;
+    status?: UserStatus;
     /** Storage label */
     storageLabel?: string | null;
 };
@@ -1900,12 +1905,45 @@ export type MapReverseGeocodeResponseDto = {
     state: string | null;
 };
 export type MemoryDataDto = {
+    /** Album ID for collaborative memories */
+    albumId?: string;
+    /** Album name for collaborative memories */
+    albumName?: string;
+    /** City for trip memories */
+    city?: string;
+    /** Country for trip memories */
+    country?: string;
+    /** Stylized effect */
+    effect?: string;
+    /** Cinematic effect type */
+    effectType?: string;
+    /** Holiday name */
+    holidayName?: string;
+    /** Location name for trip memories */
+    locationName?: string;
+    /** Visual pattern type or theme */
+    patternType?: string;
+    /** Period label */
+    period?: string;
     /** Person ID (birthday memories) */
     personId?: string;
     /** Name of the person when the memory was created (birthday memories) */
     personName?: string;
+    /** Season name */
+    season?: string;
+    /** Remix or collage style */
+    style?: string;
+    /** Custom subtitle of the memory */
+    subtitle?: string;
+    /** Custom title of the memory */
+    title?: string;
     /** Year of the memory */
-    year: number;
+    year?: number;
+    /** Years elapsed */
+    yearsAgo?: number;
+    /** Years span for growth memories */
+    yearsSpan?: number;
+    [key: string]: any;
 };
 export type MemoryResponseDto = {
     assets: AssetResponseDto[];
@@ -4234,6 +4272,27 @@ export function getMaintenanceStatus(opts?: Oazapfts.RequestOpts) {
     }));
 }
 /**
+ * Retrieve all notifications
+ */
+export function getNotificationsAdmin({ id, level, $type, unread }: {
+    id?: string;
+    level?: NotificationLevel;
+    $type?: NotificationType;
+    unread?: boolean;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: NotificationDto[];
+    }>(`/admin/notifications${QS.query(QS.explode({
+        id,
+        level,
+        "type": $type,
+        unread
+    }))}`, {
+        ...opts
+    }));
+}
+/**
  * Create a notification
  */
 export function createNotification({ notificationCreateDto }: {
@@ -4278,6 +4337,17 @@ export function sendTestEmailAdmin({ adminConfigSmtpDto }: {
         method: "POST",
         body: adminConfigSmtpDto
     })));
+}
+/**
+ * Delete notification as admin
+ */
+export function deleteNotificationAdmin({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText(`/admin/notifications/${encodeURIComponent(id)}`, {
+        ...opts,
+        method: "DELETE"
+    }));
 }
 /**
  * Search users
@@ -7199,6 +7269,21 @@ export function createSharedLink({ sharedLinkCreateDto }: {
     })));
 }
 /**
+ * Join shared album
+ */
+export function joinSharedLink({ key, slug }: {
+    key?: string;
+    slug?: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText(`/shared-links/join${QS.query(QS.explode({
+        key,
+        slug
+    }))}`, {
+        ...opts,
+        method: "POST"
+    }));
+}
+/**
  * Shared link login
  */
 export function sharedLinkLogin({ key, slug, sharedLinkLoginDto }: {
@@ -8281,7 +8366,8 @@ export enum NotificationType {
 export enum UserStatus {
     Active = "active",
     Removing = "removing",
-    Deleted = "deleted"
+    Deleted = "deleted",
+    Suspended = "suspended"
 }
 export enum CalendarHeatmapType {
     Upload = "Upload",
@@ -8595,7 +8681,19 @@ export enum MemorySearchOrder {
 }
 export enum MemoryType {
     OnThisDay = "on_this_day",
-    Birthday = "birthday"
+    Birthday = "birthday",
+    ThisWeekLastYear = "this_week_last_year",
+    RecentHighlights = "recent_highlights",
+    SeasonSummary = "season_summary",
+    MilestoneAnniversary = "milestone_anniversary",
+    PeoplePetGrowth = "people_pet_growth",
+    TripEvent = "trip_event",
+    VisualPattern = "visual_pattern",
+    HolidayCelebration = "holiday_celebration",
+    RemixCollage = "remix_collage",
+    StylizedPhoto = "stylized_photo",
+    CinematicMoments = "cinematic_moments",
+    Collaborative = "collaborative"
 }
 export enum PartnerDirection {
     SharedBy = "shared-by",

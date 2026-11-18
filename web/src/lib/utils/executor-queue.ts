@@ -34,6 +34,10 @@ export class ExecutorQueue {
     }
   }
 
+  clear(): void {
+    this.queue = [];
+  }
+
   addTask<T>(task: () => Promise<T>): Promise<T> {
     return new Promise((resolve, reject) => {
       // Add a custom task that wrap the original one;

@@ -66,6 +66,21 @@ export class SharedLinkController {
     return this.service.getAll(auth, dto);
   }
 
+  @Post('join')
+  @Authenticated({ sharedLink: true })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Endpoint({
+    summary: 'Join shared album',
+    description: 'Add current user to shared album automatically upon opening link',
+    history: new HistoryBuilder().added('v2').beta('v2').stable('v2'),
+  })
+  joinSharedLink(
+    @Auth() auth: AuthDto,
+    @Body() dto: { albumId: string; userId: string },
+  ): Promise<void> {
+    return this.service.joinSharedLink(auth, dto.albumId, dto.userId);
+  }
+
   @Post('login')
   @Authenticated({ sharedLink: true })
   @Endpoint({

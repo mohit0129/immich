@@ -37,7 +37,9 @@
   import {
     deleteAlbumMutation,
     getAlbumInfoQuery,
+    getAllAlbumsQuery,
     invalidateAlbum,
+    invalidateAlbums,
     updateAlbumInfoMutation,
   } from '#lib/queries/album.query.ts';
   import { createPreloadedQuery, executeMutation } from '#lib/queries/client.ts';
@@ -49,15 +51,18 @@
   import { SlideshowNavigation, SlideshowState, slideshowStore } from '#lib/stores/slideshow.store.ts';
   import { handlePromiseError } from '#lib/utils.ts';
   import { delay } from '#lib/utils/asset-utils.ts';
+  import { handleError } from '#lib/utils/handle-error.ts';
   import { isAlbumsRoute, navigate, type AssetGridRouteSearchParams } from '#lib/utils/navigation.ts';
-  import { AlbumUserRole, AssetVisibility, ReactionType } from '@immich/sdk';
-  import { ActionButton, CommandPaletteDefaultProvider, Icon, IconButton } from '@immich/ui';
+  import { createAlbum, AlbumUserRole, AssetVisibility, ReactionType } from '@immich/sdk';
+  import { ActionButton, Button, CommandPaletteDefaultProvider, Icon, IconButton } from '@immich/ui';
   import {
     mdiAccountEye,
     mdiAccountEyeOutline,
     mdiArrowLeft,
     mdiDotsHorizontal,
     mdiDotsVertical,
+    mdiFolderPlusOutline,
+    mdiImageAlbum,
     mdiImageOutline,
     mdiImagePlusOutline,
     mdiLink,
@@ -76,6 +81,38 @@
 
   const albumQuery = createPreloadedQuery(() => getAlbumInfoQuery(params.albumId));
   const album = $derived(albumQuery.data);
+
+  const allAlbumsQuery = createPreloadedQuery(() => getAllAlbumsQuery());
+  const subAlbums = $derived(
+    (allAlbumsQuery.data ?? []).filter((a) => a.description?.includes(`[PARENT:${params.albumId}]`)),
+  );
+
+  let showSubAlbumModal = $state(false);
+  let newSubAlbumName = $state('');
+
+  const handleCreateSubAlbum = () => {
+    newSubAlbumName = '';
+    showSubAlbumModal = true;
+  };
+
+  const submitCreateSubAlbum = async () => {
+    if (!newSubAlbumName.trim()) return;
+    try {
+      showSubAlbumModal = false;
+      const res = await createAlbum({
+        albumCreateDto: {
+          albumName: newSubAlbumName.trim(),
+          description: `[PARENT:${album.id}]`,
+        },
+      });
+      newSubAlbumName = '';
+      invalidateAlbums();
+      await goto(Route.viewAlbum({ id: res.id }));
+    } catch (e) {
+      handleError(e, 'Failed to create sub-album');
+    }
+  };
+
   let viewMode: AlbumPageViewMode = $state(AlbumPageViewMode.VIEW);
   const isShared = $derived(viewMode !== AlbumPageViewMode.SELECT_ASSETS && album.albumUsers.length > 1);
 
@@ -362,6 +399,54 @@
               {/if}
 
               <AlbumDescription id={album.id} {isEditor} description={album.description} />
+
+              <!-- SUB-ALBUMS (Nested Albums) -->
+              <div class="my-6">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Sub-albums ({subAlbums.length})
+                  </h3>
+                  {#if isEditor}
+                    <Button
+                      size="tiny"
+                      variant="outline"
+                      leadingIcon={mdiPlus}
+                      onclick={handleCreateSubAlbum}
+                    >
+                      New Album Inside
+                    </Button>
+                  {/if}
+                </div>
+
+                {#if subAlbums.length > 0}
+                  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                    {#each subAlbums as sub (sub.id)}
+                      <a
+                        href={Route.viewAlbum({ id: sub.id })}
+                        class="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-2 shadow-xs transition-all hover:border-primary hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+                      >
+                        <div class="aspect-square w-full rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center dark:bg-gray-800">
+                          {#if sub.albumThumbnailAssetId}
+                            <img
+                              src="/api/assets/{sub.albumThumbnailAssetId}/thumbnail"
+                              alt={sub.albumName}
+                              class="h-full w-full object-cover transition-transform group-hover:scale-105"
+                            />
+                          {:else}
+                            <Icon icon={mdiImageAlbum} size="32" class="text-gray-400" />
+                          {/if}
+                        </div>
+                        <span class="mt-2 truncate text-sm font-medium text-gray-900 dark:text-white">
+                          {sub.albumName}
+                        </span>
+                        <span class="text-xs text-gray-500">
+                          {sub.assetCount} {sub.assetCount === 1 ? 'item' : 'items'}
+                        </span>
+                      </a>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
             </section>
           {/if}
 
@@ -461,6 +546,15 @@
                 }}
                 icon={mdiImagePlusOutline}
               />
+              <IconButton
+                variant="ghost"
+                shape="round"
+                color="secondary"
+                aria-label="New album inside"
+                title="New album inside"
+                onclick={handleCreateSubAlbum}
+                icon={mdiFolderPlusOutline}
+              />
             {/if}
 
             <ActionButton action={Actions.Share} />
@@ -549,6 +643,33 @@
         translate="yes"
       >
         <ActivityViewer disabled={!album.isActivityEnabled} albumUsers={album.albumUsers} albumId={album.id} />
+      </div>
+    </div>
+  {/if}
+
+  {#if showSubAlbumModal}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900 dark:text-white">
+        <h3 class="text-lg font-bold">New Album Inside</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Create an album inside "{album.albumName}"
+        </p>
+        <input
+          type="text"
+          bind:value={newSubAlbumName}
+          placeholder="Album name"
+          class="mt-4 w-full rounded-xl border border-gray-300 bg-transparent px-3 py-2 text-sm focus:border-primary focus:outline-none dark:border-gray-700"
+          onkeydown={(e) => e.key === 'Enter' && submitCreateSubAlbum()}
+          autofocus
+        />
+        <div class="mt-6 flex justify-end gap-3">
+          <Button variant="ghost" size="small" onclick={() => (showSubAlbumModal = false)}>
+            Cancel
+          </Button>
+          <Button variant="primary" size="small" onclick={submitCreateSubAlbum}>
+            Create
+          </Button>
+        </div>
       </div>
     </div>
   {/if}
